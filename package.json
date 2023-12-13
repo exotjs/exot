@@ -1,5 +1,5 @@
 {
-  "name": "exot",
+  "name": "@exotjs/exot",
   "version": "0.0.1",
   "description": "A cross-platform TypeScript framework for server applications.",
   "author": "Daniel Regeci",

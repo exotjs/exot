@@ -24,7 +24,7 @@ Supported adapters:
 Example:
 
 ```js
-import { Exot } from 'exot';
+import { Exot } from '@exotjs/exot';
 
 new Exot()
   .get('/', () => 'Hello world')
