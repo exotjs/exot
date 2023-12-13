@@ -1,0 +1,71 @@
+{
+  "name": "exot",
+  "version": "0.0.1",
+  "description": "A cross-platform TypeScript framework for server applications.",
+  "author": "Daniel Regeci",
+  "license": "MIT",
+  "keywords": ["server", "http", "rest", "restful", "router", "api", "framework", "typescript"],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "rimraf dist && tsc -p tsconfig.build.json",
+    "test": "vitest"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./errors": {
+      "types": "./dist/errors.d.ts",
+      "import": "./dist/errors.js"
+    },
+    "./middleware/cors": {
+      "types": "./dist/middleware/cors.d.ts",
+      "import": "./dist/middleware/cors.js"
+    },
+    "./validation": {
+      "types": "./dist/validation.d.ts",
+      "import": "./dist/validation.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "types": [
+        "./dist/types"
+      ],
+      "errors": [
+        "./dist/errors"
+      ],
+      "middleware/cors": [
+        "./dist/middleware/cors"
+      ],
+      "validation": [
+        "./dist/validation"
+      ]
+    }
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.31.23",
+    "ajv": "^8.12.0",
+    "cookie": "^0.6.0",
+    "fast-querystring": "^1.1.2",
+    "find-my-way": "^7.7.0",
+    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.33.0"
+  },
+  "devDependencies": {
+    "@types/cookie": "^0.5.4",
+    "@types/node": "^20.9.0",
+    "rimraf": "^5.0.5",
+    "tinybench": "^2.5.1",
+    "ts-node": "^10.9.1",
+    "tsx": "^4.0.0",
+    "typescript": "^5.2.2",
+    "vitest": "^1.0.1"
+  }
+}
