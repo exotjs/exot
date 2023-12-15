@@ -58,7 +58,6 @@ export class Router {
   }
 
   all(route: string, stack: ChainFn<any>[]) {
-    console.log('>ALL', route)
     this.fmw.all(route, () => {}, { params: {}, route, stack } satisfies RouteStore);
   }
 

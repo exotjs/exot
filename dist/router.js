@@ -44,7 +44,6 @@ export class Router {
         }
     }
     all(route, stack) {
-        console.log('>ALL', route);
         this.fmw.all(route, () => { }, { params: {}, route, stack });
     }
     find(method, path) {

@@ -7,6 +7,6 @@ export declare class FetchAdapter implements Adapter {
     close(): Promise<void>;
     fetch(req: Request): MaybePromise<Response>;
     listen(port: number): Promise<number>;
-    mount(exot: Exot): Exot<{}, {}, {}, import("../types").ContextInterface<any, any, any, any, {}, {}>>;
+    mount(exot: Exot): Exot<{}, {}, {}, {}, import("../types").ContextInterface<any, any, any, any, {}, {}>>;
     ws(path: string, handler: any): void;
 }

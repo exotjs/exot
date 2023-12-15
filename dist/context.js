@@ -8,18 +8,11 @@ export class Context {
     shared;
     store;
     tracing;
-    // readonly res: ContextResponse<Params, Body, Query, ResponseBody, Shared, Store>;
     bodySchema;
+    responseSchema;
     route;
     terminated = false;
     traces = [];
-    /*
-    public responseBody?: ResponseBody;
-  
-    readonly responseHeaders: Headers = process.versions.bun ? new Headers() : new HttpHeaders();
-  
-    public responseStatus: number = 0;
-    */
     #cookies;
     #path;
     #query;
@@ -36,7 +29,6 @@ export class Context {
         this.shared = shared;
         this.store = store;
         this.tracing = tracing;
-        // this.res = new ContextResponse<Params, Body, Query, ResponseBody, Shared, Store>(this);
         /*
         if (typeof req.parsedUrl === 'function') {
           const { path, querystring } = req.parsedUrl();
@@ -104,10 +96,12 @@ export class Context {
     }
     ;
     get json() {
-        return (value) => {
+        return (value, validate) => {
             if (value !== void 0) {
-                this.set.headers.set('content-type', 'application/json');
-                this.set.body = JSON.stringify(value);
+                if (!this.set.headers.has('content-type')) {
+                    this.set.headers.set('content-type', 'application/json');
+                }
+                this.set.body = JSON.stringify(validate === false ? value : this.#validateResponse(value));
             }
             else {
                 return this.req.json().then((body) => this.#validateBody(body));
@@ -130,19 +124,15 @@ export class Context {
         };
     }
     get text() {
-        return (value) => {
+        return (value, validate) => {
             if (value !== void 0) {
-                this.set.headers.set('content-type', 'text/plain');
-                this.set.body = value;
+                if (!this.set.headers.has('content-type')) {
+                    this.set.headers.set('content-type', 'text/plain');
+                }
+                this.set.body = (validate === false ? value : this.#validateResponse(value));
             }
             else {
                 return this.req.text().then((body) => this.#validateBody(body));
-                /*
-                return chain<string>([
-                  () => this.req.text(),
-                  (body: string) => this.#validateBody(body),
-                ]);
-                */
             }
         };
     }
@@ -210,67 +200,10 @@ export class Context {
         }
         return body;
     }
+    #validateResponse(response) {
+        if (this.responseSchema) {
+            return this._trace(() => validateSchema(this.responseSchema, response, 'response'), '@validate:response');
+        }
+        return response;
+    }
 }
-/*
-export class ContextResponse<
-  Params = AnyRecord,
-  Body = unknown,
-  Query = AnyRecord,
-  ResponseBody = unknown,
-  Shared = unknown,
-  Store = unknown,
-> {
-  static defaultHeaders = {
-    'Content-Type': 'application/octet-stream',
-  };
-
-  body: any = void 0;
-
-  bytesWritten: number = 0;
-
-  readonly headers: Headers = process.versions.bun ? new Headers(ContextResponse.defaultHeaders) : new HttpHeaders(ContextResponse.defaultHeaders);
-
-  statusCode: number = 0;
-
-  constructor(
-    readonly ctx: Context<Params, Body, Query, ResponseBody, Shared, Store>
-  ) {
-  }
-
-  get contentType(): string | null {
-    return String(this.headers.get('Content-Type') || '');
-  }
-
-  set contentType(value: string) {
-    this.headers.set('Content-Type', value);
-  }
-
-  destroy() {
-    this.body = void 0;
-    this.bytesWritten = 0;
-    this.statusCode = 0;
-  }
-
-  get json() {
-    return (body: ResponseBody) => {
-      this.contentType = 'application/json';
-      this.body = JSON.stringify(body);
-      return this;
-    };
-  }
-
-  get text() {
-    return (body: ResponseBody) => {
-      this.contentType = 'text/plain';
-      this.body = String(body);
-      return this;
-    };
-  }
-
-  get stream() {
-    return (stream: Readable) => {
-      this.body = stream;
-    };
-  }
-}
-*/

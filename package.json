@@ -1,10 +1,19 @@
 {
   "name": "@exotjs/exot",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A cross-platform TypeScript framework for server applications.",
   "author": "Daniel Regeci",
   "license": "MIT",
-  "keywords": ["server", "http", "rest", "restful", "router", "api", "framework", "typescript"],
+  "keywords": [
+    "server",
+    "http",
+    "rest",
+    "restful",
+    "router",
+    "api",
+    "framework",
+    "typescript"
+  ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -25,9 +34,21 @@
       "types": "./dist/errors.d.ts",
       "import": "./dist/errors.js"
     },
+    "./headers": {
+      "types": "./dist/headers.d.ts",
+      "import": "./dist/headers.js"
+    },
+    "./helpers": {
+      "types": "./dist/helpers.d.ts",
+      "import": "./dist/helpers.js"
+    },
     "./middleware/cors": {
       "types": "./dist/middleware/cors.d.ts",
       "import": "./dist/middleware/cors.js"
+    },
+    "./request": {
+      "types": "./dist/request.d.ts",
+      "import": "./dist/request.js"
     },
     "./validation": {
       "types": "./dist/validation.d.ts",
@@ -42,8 +63,17 @@
       "errors": [
         "./dist/errors"
       ],
+      "headers": [
+        "./dist/headers"
+      ],
+      "helpers": [
+        "./dist/helpers"
+      ],
       "middleware/cors": [
         "./dist/middleware/cors"
+      ],
+      "request": [
+        "./dist/request"
       ],
       "validation": [
         "./dist/validation"
@@ -55,8 +85,7 @@
     "ajv": "^8.12.0",
     "cookie": "^0.6.0",
     "fast-querystring": "^1.1.2",
-    "find-my-way": "^7.7.0",
-    "uWebSockets.js": "uNetworking/uWebSockets.js#v20.33.0"
+    "find-my-way": "^7.7.0"
   },
   "devDependencies": {
     "@types/cookie": "^0.5.4",

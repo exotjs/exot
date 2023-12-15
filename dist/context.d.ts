@@ -14,6 +14,7 @@ export declare class Context<Params = AnyRecord, Body = unknown, Query = AnyReco
     readonly store: Store;
     tracing: boolean;
     bodySchema?: ValidateFunction<TSchema>;
+    responseSchema?: ValidateFunction<TSchema>;
     route?: string;
     terminated: boolean;
     traces: Trace[];
@@ -34,9 +35,9 @@ export declare class Context<Params = AnyRecord, Body = unknown, Query = AnyReco
     };
     get arrayBuffer(): () => Promise<ArrayBuffer>;
     get formData(): () => Promise<FormData>;
-    get json(): (value?: any) => Promise<Body> | undefined;
+    get json(): (value?: any, validate?: boolean) => Promise<Body> | undefined;
     get stream(): <T = ReadableStream<any> | Readable>(value?: T | undefined) => T | undefined;
-    get text(): (value?: string) => Promise<string> | undefined;
+    get text(): (value?: string, validate?: boolean) => Promise<string> | undefined;
     get traceStart(): (name?: string, desc?: string) => Trace;
     get traceEnd(): (error?: any) => void;
     get trace(): <T>(fn: () => T, name?: string, desc?: string | undefined) => MaybePromise<T>;

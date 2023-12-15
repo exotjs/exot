@@ -43,6 +43,9 @@ package-lock.json
 
 # app
 /benchmark
+/examples/jsx
+/examples/controllers
+/examples/swagger.ts
 /.specs
 .TODO
 .http

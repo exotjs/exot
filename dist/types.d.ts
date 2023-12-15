@@ -17,11 +17,13 @@ type OptionalDefined<T> = {
 } & {
     [K in keyof PickDefined<T>]: T[K];
 };
-export interface ExotInit {
+export interface ExotInit<UseHandlerOptions extends AnyRecord = {}> {
+    handlerOptions?: UseHandlerOptions;
     name?: string;
     prefix?: string;
     router?: RouterInit;
     tracing?: boolean;
+    onComposed?: (parent?: Exot<any, any, any>) => void;
 }
 export type AnyRecord = Record<string, any>;
 export type AnyExot<T extends ContextInterface = ContextInterface> = Exot<any, any, any, T>;
@@ -37,7 +39,7 @@ export interface StackHandlerOptions<Params extends TSchema, Body extends TSchem
     params?: Params;
     query?: Query;
     response?: Response;
-    scope?: OptionalDefined<Store>;
+    store?: OptionalDefined<Store>;
 }
 export type ErrorHandler<LocalContext extends Context> = (err: any, ctx: LocalContext) => Promise<void> | void;
 export type TraceHandler<LocalContext extends Context> = (ctx: LocalContext) => Promise<void> | void;
@@ -55,10 +57,14 @@ export type TrasformResult<Params, Query> = {
     params?: Params;
     query?: Query;
 };
-type IsParameter<Part> = Part extends `:${infer ParamName}` ? ParamName : never;
+type IsOptionalParameter<Part> = Part extends `:${infer ParamName}?` ? ParamName : never;
+type IsParameter<Part> = Part extends `:${infer ParamName}?` ? never : Part extends `:${infer ParamName}` ? ParamName : never;
 type FilteredParts<Path> = Path extends `${infer PartA}/${infer PartB}` ? IsParameter<PartA> | FilteredParts<PartB> : IsParameter<Path>;
+type FilteredOptionalParts<Path> = Path extends `${infer PartA}/${infer PartB}` ? IsOptionalParameter<PartA> | FilteredOptionalParts<PartB> : IsOptionalParameter<Path>;
 export type RouteParams<Path> = {
     [Key in FilteredParts<Path> as Key]: string;
+} & {
+    [Key in FilteredOptionalParts<Path> as Key]: string | undefined;
 };
 export interface HandlerOptions<Params extends TSchema, Body extends TSchema, Query extends TSchema, Response extends TSchema, Store extends AnyRecord> {
     transform?: (ctx: Context<any, Body, Query, Response, any, Store>) => Promise<TrasformResult<Static<Params>, Static<Query>>> | TrasformResult<Static<Params>, Static<Query>>;

@@ -11,7 +11,7 @@ export declare class NodeAdapter implements Adapter {
     readonly server: import("http").Server<typeof IncomingMessage, typeof ServerResponse>;
     close(): Promise<void>;
     listen(port: number): Promise<number>;
-    mount(exot: Exot): Exot<{}, {}, {}, import("../types").ContextInterface<any, any, any, any, {}, {}>>;
+    mount(exot: Exot): Exot<{}, {}, {}, {}, import("../types").ContextInterface<any, any, any, any, {}, {}>>;
     fetch(req: Request): Promise<Response>;
     ws(path: string, handler: WsHandler<any>): void;
 }

@@ -1,8 +1,6 @@
-import adapter from '../lib/adapters/uws';
 import { Exot } from '../lib';
 
 const exot = new Exot()
-  .adapter(adapter())
   .get('/', () => {
     return 'Hi';
   })

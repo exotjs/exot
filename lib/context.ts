@@ -16,23 +16,15 @@ export class Context<
   Shared = unknown,
   Store = unknown,
 > {
-  // readonly res: ContextResponse<Params, Body, Query, ResponseBody, Shared, Store>;
-
   public bodySchema?: ValidateFunction<TSchema>;
+
+  public responseSchema?: ValidateFunction<TSchema>;
 
   public route?: string;
 
   public terminated: boolean = false;
 
   public traces: Trace[] = [];
-
-  /*
-  public responseBody?: ResponseBody;
-
-  readonly responseHeaders: Headers = process.versions.bun ? new Headers() : new HttpHeaders();
-
-  public responseStatus: number = 0;
-  */
 
   #cookies?: Cookies;
 
@@ -57,7 +49,6 @@ export class Context<
     readonly store: Store = {} as Store,
     public tracing: boolean = false,
   ) {
-    // this.res = new ContextResponse<Params, Body, Query, ResponseBody, Shared, Store>(this);
     /*
     if (typeof req.parsedUrl === 'function') {
       const { path, querystring } = req.parsedUrl();
@@ -137,10 +128,12 @@ export class Context<
   };
 
   get json() {
-    return (value?: any) => {
+    return (value?: any, validate?: boolean) => {
       if (value !== void 0) {
-        this.set.headers.set('content-type', 'application/json');
-        this.set.body = JSON.stringify(value) as ResponseBody;
+        if (!this.set.headers.has('content-type')) {
+          this.set.headers.set('content-type', 'application/json');
+        }
+        this.set.body = JSON.stringify(validate === false ? value : this.#validateResponse(value)) as ResponseBody;
       } else {
         return this.req.json().then((body: Body) => this.#validateBody(body));
       }
@@ -163,18 +156,14 @@ export class Context<
   }
 
   get text() {
-    return (value?: string) => {
+    return (value?: string, validate?: boolean) => {
       if (value !== void 0) {
-        this.set.headers.set('content-type', 'text/plain');
-        this.set.body = value as ResponseBody;
+        if (!this.set.headers.has('content-type')) {
+          this.set.headers.set('content-type', 'text/plain');
+        }
+        this.set.body = (validate === false ? value : this.#validateResponse(value)) as ResponseBody;
       } else {
         return this.req.text().then((body: string) => this.#validateBody(body));
-        /*
-        return chain<string>([
-          () => this.req.text(),
-          (body: string) => this.#validateBody(body),
-        ]);
-        */
       }
     };
   }
@@ -253,68 +242,11 @@ export class Context<
     }
     return body;
   }
-}
 
-/*
-export class ContextResponse<
-  Params = AnyRecord,
-  Body = unknown,
-  Query = AnyRecord,
-  ResponseBody = unknown,
-  Shared = unknown,
-  Store = unknown,
-> {
-  static defaultHeaders = {
-    'Content-Type': 'application/octet-stream',
-  };
-
-  body: any = void 0;
-
-  bytesWritten: number = 0;
-
-  readonly headers: Headers = process.versions.bun ? new Headers(ContextResponse.defaultHeaders) : new HttpHeaders(ContextResponse.defaultHeaders);
-
-  statusCode: number = 0;
-
-  constructor(
-    readonly ctx: Context<Params, Body, Query, ResponseBody, Shared, Store>
-  ) {
-  }
-
-  get contentType(): string | null {
-    return String(this.headers.get('Content-Type') || '');
-  }
-
-  set contentType(value: string) {
-    this.headers.set('Content-Type', value);
-  }
-
-  destroy() {
-    this.body = void 0;
-    this.bytesWritten = 0;
-    this.statusCode = 0;
-  }
-
-  get json() {
-    return (body: ResponseBody) => {
-      this.contentType = 'application/json';
-      this.body = JSON.stringify(body);
-      return this;
-    };
-  }
-
-  get text() {
-    return (body: ResponseBody) => {
-      this.contentType = 'text/plain';
-      this.body = String(body);
-      return this;
-    };
-  }
-
-  get stream() {
-    return (stream: Readable) => {
-      this.body = stream;
-    };
+  #validateResponse<T = ResponseBody>(response: T): T {
+    if (this.responseSchema) {
+      return this._trace<T>(() => validateSchema(this.responseSchema!, response, 'response') as T, '@validate:response') as T;
+    }
+    return response;
   }
 }
-*/
