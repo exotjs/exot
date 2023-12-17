@@ -1,7 +1,7 @@
 export class BaseError extends Error {
     message;
     statusCode = 500;
-    constructor(message = 'Not found') {
+    constructor(message = 'Error') {
         super(message);
         this.message = message;
     }
@@ -38,6 +38,9 @@ export class ValidationError extends BaseError {
         this.details = details;
         this.location = location;
         this.statusCode = 400;
+    }
+    toString() {
+        return `${this.message}\n${this.details.map((detail) => `  ${detail?.message || detail}`)}`;
     }
     toJSON() {
         return {

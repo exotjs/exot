@@ -1,13 +1,16 @@
 import Ajv, { Options, ValidateFunction } from 'ajv';
+import addFormats from 'ajv-formats';
 import { ValidationError } from './errors';
 import type { TSchema, Static } from '@sinclair/typebox';
-export type * from 'ajv';
+export type { ValidateFunction } from 'ajv';
 
 let ajv = new Ajv({
   coerceTypes: 'array',
   useDefaults: true,
   removeAdditional: 'all',
 });
+
+addFormats(ajv);
 
 export function setAjv(useAjv: Ajv | Options) {
   if ('compile' in useAjv) {

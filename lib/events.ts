@@ -1,7 +1,7 @@
 import { chainAll } from './helpers';
-import { ChainFn, ContextInterface, StackHandler } from './types';
+import { ChainFn, ContextInterface, MaybePromise, StackHandler } from './types';
 
-const EVENTS = ['error', 'handler', 'request', 'response', 'route', 'start'] as const;
+const EVENTS = ['error', 'publish', 'request', 'response', 'route', 'start', 'subscribe'] as const;
 
 type AllowedEvents = (typeof EVENTS)[number];
 
@@ -14,11 +14,12 @@ export class Events<
 > {
   private readonly _listeners: Record<AllowedEvents, ChainFn<LocalContext>[]> = {
     error: [],
-    handler: [],
+    publish: [],
     request: [],
     response: [],
     route: [],
     start: [],
+    subscribe: [],
   };
 
   private readonly _forward: Events<LocalContext>[] = [];
@@ -31,23 +32,28 @@ export class Events<
     this._forward.push(events);
   }
 
-  emit(event: AllowedEvents, ctx: LocalContext): any {
+  emit(event: 'error', ctx: LocalContext): MaybePromise<any>;
+  emit(event: 'publish', data: [string, Uint8Array]): MaybePromise<any>;
+  emit(event: 'request', ctx: LocalContext): MaybePromise<any>;
+  emit(event: 'response', ctx: LocalContext): MaybePromise<any>;
+  emit(event: 'route', ctx: LocalContext): MaybePromise<any>;
+  emit(event: AllowedEvents, arg: any): MaybePromise<any> {
     const lenListeners = this._listeners[event]?.length || 0;
     const lenForward = this._forward.length;
     if (!lenListeners && !lenForward) {
       return;
     }
     if (lenListeners && !lenForward) {
-      return chainAll(this._listeners[event], ctx);
+      return chainAll(this._listeners[event], arg);
     }
    return chainAll([
-      () => chainAll(this._listeners[event], ctx),
-      () => chainAll(this._forward.map((ev) => ev.emit(event, ctx)), ctx),
-   ], ctx);
+      () => chainAll(this._listeners[event], arg),
+      () => chainAll(this._forward.map((ev) => () => ev.emit(event as any, arg)), arg),
+   ], arg);
   }
 
   on(
-    event: 'handler' | 'request' | 'response' | 'route',
+    event: 'request' | 'response' | 'route',
     handler: StackHandler<LocalContext>
   ): void;
 

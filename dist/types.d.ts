@@ -1,11 +1,11 @@
-/// <reference types="node" />
-import type { Readable } from 'node:stream';
 import type { TSchema, Static } from '@sinclair/typebox';
 import type { Context } from './context';
-import type { Exot } from './exot';
+import { Exot } from './exot';
 import type { Router } from './router';
 import type { Config, HTTPMethod, HTTPVersion } from 'find-my-way';
+import { ExotWebSocket } from './websocket';
 export type { HTTPMethod } from 'find-my-way';
+export type Runtime = 'bun' | 'deno' | 'edge-light' | 'fastly' | 'lagon' | 'netlify' | 'node' | 'unknown' | 'workerd';
 type PickUndefined<T> = {
     [P in keyof T as undefined extends T[P] ? P : never]: T[P];
 };
@@ -53,6 +53,14 @@ export type WsHandler<WsSocket> = {
     open?: (ws: WsSocket) => Promise<void> | void;
     upgrade?: (req: Request, res: Response) => Promise<void> | void;
 };
+export interface WebSocketHandler<UserData> {
+    beforeUpgrade?: (req: Request, socket?: unknown, head?: unknown) => MaybePromise<UserData>;
+    close?: (ws: ExotWebSocket<any, UserData>, userData: UserData) => MaybePromise<void>;
+    drain?: (ws: ExotWebSocket<any, UserData>, userData: UserData) => MaybePromise<void>;
+    error?: (ws: ExotWebSocket<any, UserData>, err: any, userData: UserData) => MaybePromise<void>;
+    message?: (ws: ExotWebSocket<any, UserData>, message: ArrayBuffer | Uint8Array | string, userData: UserData) => MaybePromise<void>;
+    open?: (ws: ExotWebSocket<any, UserData>, userData: UserData) => MaybePromise<void>;
+}
 export type TrasformResult<Params, Query> = {
     params?: Params;
     query?: Query;
@@ -99,25 +107,9 @@ export interface Trace {
 }
 export interface Adapter<WsHandler = any> {
     close(): Promise<void>;
-    fetch(req: Request): MaybePromise<Response>;
+    fetch(req: Request, ...args: unknown[]): MaybePromise<Response>;
     listen(port: number): Promise<number>;
     mount(exot: Exot<any, any, any>): void;
     ws(path: string, handler: WsHandler): void;
 }
-/** @deprecated */
-export interface AdapterRequest {
-    arrayBuffer(): MaybePromise<ArrayBuffer>;
-    body: Readable | ReadableStream | null;
-    formData(): MaybePromise<FormData>;
-    headers: Headers;
-    json(): MaybePromise<any>;
-    method: string;
-    text(): MaybePromise<string>;
-    url: string;
-    destroy?: () => void;
-    parsedUrl?: () => {
-        path: string;
-        querystring: string;
-    };
-    remoteAddress?: () => string;
-}
+export type PubSubHandler = (topic: string, data: ArrayBuffer | string | null) => void;

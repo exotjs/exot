@@ -1,7 +1,7 @@
 {
   "name": "@exotjs/exot",
-  "version": "0.0.2",
-  "description": "A cross-platform TypeScript framework for server applications.",
+  "version": "0.0.3",
+  "description": "A cross-runtime TypeScript framework for server applications.",
   "author": "Daniel Regeci",
   "license": "MIT",
   "keywords": [
@@ -30,6 +30,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./env": {
+      "types": "./dist/env.d.ts",
+      "import": "./dist/env.js"
+    },
     "./errors": {
       "types": "./dist/errors.d.ts",
       "import": "./dist/errors.js"
@@ -41,10 +45,6 @@
     "./helpers": {
       "types": "./dist/helpers.d.ts",
       "import": "./dist/helpers.js"
-    },
-    "./middleware/cors": {
-      "types": "./dist/middleware/cors.d.ts",
-      "import": "./dist/middleware/cors.js"
     },
     "./request": {
       "types": "./dist/request.d.ts",
@@ -60,6 +60,9 @@
       "types": [
         "./dist/types"
       ],
+      "env": [
+        "./dist/env"
+      ],
       "errors": [
         "./dist/errors"
       ],
@@ -68,9 +71,6 @@
       ],
       "helpers": [
         "./dist/helpers"
-      ],
-      "middleware/cors": [
-        "./dist/middleware/cors"
       ],
       "request": [
         "./dist/request"
@@ -83,6 +83,7 @@
   "dependencies": {
     "@sinclair/typebox": "^0.31.23",
     "ajv": "^8.12.0",
+    "ajv-formats": "^2.1.1",
     "cookie": "^0.6.0",
     "fast-querystring": "^1.1.2",
     "find-my-way": "^7.7.0"
@@ -95,6 +96,7 @@
     "ts-node": "^10.9.1",
     "tsx": "^4.0.0",
     "typescript": "^5.2.2",
-    "vitest": "^1.0.1"
+    "vitest": "^1.0.1",
+    "ws": "^8.15.1"
   }
 }

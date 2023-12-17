@@ -3,11 +3,17 @@ import { Exot } from '../../lib';
 
 const ex = new Exot()
   // mount NodeAdapter
-  .adapter(adapter())
+  .adapter(adapter({
+    /*
+    // enable WebSockets by attaching the WebSocketServer instance from the `ws` package
+    wss: new WebSocketServer({
+      noServer: true,
+    }),
+    */
+  }))
 
-  .get('/', ({ text }) => {
-    // req.raw is an instance of IncomingMessage
-    text('Hi')
+  .get('/', () => {
+    return 'Hi';
   })
 
   .post('/', async ({ headers, method, path, query, json, remoteAddress }) => {

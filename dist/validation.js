@@ -1,10 +1,12 @@
 import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
 import { ValidationError } from './errors';
 let ajv = new Ajv({
     coerceTypes: 'array',
     useDefaults: true,
     removeAdditional: 'all',
 });
+addFormats(ajv);
 export function setAjv(useAjv) {
     if ('compile' in useAjv) {
         ajv = useAjv;

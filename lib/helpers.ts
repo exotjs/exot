@@ -45,8 +45,9 @@ export function chain<T>(
   return chain(fns, input, i + 1, terminateOnReturn);
 }
 
-export const chainAll = <T>(fns: ChainFn<T>[], input: T) =>
-  chain(fns, input, 0, false);
+export const chainAll = <T>(fns: ChainFn<T>[], input: T) => {
+  return chain(fns, input, 0, false);
+}
 
 export function parseQueryString(querystring: string) {
   if (querystring[0] === '?') {

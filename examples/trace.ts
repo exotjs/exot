@@ -1,7 +1,5 @@
 import { Exot, t } from '../lib';
-import adapter from '../lib/adapters/uws';
 import { printTraces } from '../lib/helpers';
-import { serverTiming } from '../lib/middleware/server-timing';
 
 async function slowFunc(name: string) {
   return new Promise((resolve) => {
@@ -15,15 +13,12 @@ const ex = new Exot({
   // enable global tracing
   tracing: true,
 })
-  .adapter(adapter())
   // Or define your trace handler
   /*
   .trace((ctx) => {
     printTraces(ctx);
   })
   */
-
-  .use(serverTiming())
 
   .get('/hello/:name', async ({ trace, params }) => {
     // custom tracer bound to a named function

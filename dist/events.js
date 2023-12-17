@@ -1,14 +1,15 @@
 import { chainAll } from './helpers';
-const EVENTS = ['error', 'handler', 'request', 'response', 'route', 'start'];
+const EVENTS = ['error', 'publish', 'request', 'response', 'route', 'start', 'subscribe'];
 export class Events {
     name;
     _listeners = {
         error: [],
-        handler: [],
+        publish: [],
         request: [],
         response: [],
         route: [],
         start: [],
+        subscribe: [],
     };
     _forward = [];
     constructor(name) {
@@ -17,19 +18,19 @@ export class Events {
     forwardTo(events) {
         this._forward.push(events);
     }
-    emit(event, ctx) {
+    emit(event, arg) {
         const lenListeners = this._listeners[event]?.length || 0;
         const lenForward = this._forward.length;
         if (!lenListeners && !lenForward) {
             return;
         }
         if (lenListeners && !lenForward) {
-            return chainAll(this._listeners[event], ctx);
+            return chainAll(this._listeners[event], arg);
         }
         return chainAll([
-            () => chainAll(this._listeners[event], ctx),
-            () => chainAll(this._forward.map((ev) => ev.emit(event, ctx)), ctx),
-        ], ctx);
+            () => chainAll(this._listeners[event], arg),
+            () => chainAll(this._forward.map((ev) => () => ev.emit(event, arg)), arg),
+        ], arg);
     }
     on(event, handler) {
         const fn = (ctx) => ctx._trace(() => handler(ctx), '@on:' + event, this.name);

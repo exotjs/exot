@@ -21,6 +21,7 @@ export declare class ValidationError extends BaseError {
     details: ErrorObject[];
     location?: string | undefined;
     constructor(message?: string, details?: ErrorObject[], location?: string | undefined);
+    toString(): string;
     toJSON(): {
         error: string;
         details: ErrorObject<string, Record<string, any>, unknown>[];

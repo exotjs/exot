@@ -3,7 +3,7 @@ import type { ErrorObject } from 'ajv';
 export class BaseError extends Error {
   statusCode: number = 500;
 
-  constructor(public message: string = 'Not found') {
+  constructor(public message: string = 'Error') {
     super(message);
   }
 
@@ -34,6 +34,10 @@ export class ValidationError extends BaseError {
   constructor(public message: string = 'Validation error', public details: ErrorObject[] = [], public location?: string) {
     super(message);
     this.statusCode = 400;
+  }
+
+  toString() {
+    return `${this.message}\n${this.details.map((detail) => `  ${detail?.message || detail}`)}`;
   }
 
   toJSON() {

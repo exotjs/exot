@@ -110,16 +110,16 @@ describe('Exot', () => {
     });
 
     describe('.handle()', () => {
-      let ctx: ContextInterface;
+      let ctx: ContextInterface<any, any, any, any, any, any>;
 
       beforeEach(() => {
         ctx = exot.context(new Request('http://localhost'));
       });
 
       it('should execute handlers', async () => {
-        const fn1 = vi.fn();
-        const fn2 = vi.fn();
-        const notFound = vi.fn();
+        const fn1 = vi.fn(() => {});
+        const fn2 = vi.fn(() => {});
+        const notFound = vi.fn(() => {});
         exot.use(fn1);
         exot.use(fn2);
         exot.notFound(notFound);

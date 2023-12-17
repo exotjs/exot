@@ -6,6 +6,7 @@ import { HttpHeaders } from './headers';
 import type { ValidateFunction } from 'ajv';
 import type { AnyRecord, HTTPMethod, MaybePromise, Trace } from './types';
 import { HttpRequest } from './request';
+import { PubSub } from './pubsub';
 export declare class Context<Params = AnyRecord, Body = unknown, Query = AnyRecord, ResponseBody = unknown, Shared = unknown, Store = unknown> {
     #private;
     readonly req: Request & HttpRequest;
@@ -14,6 +15,7 @@ export declare class Context<Params = AnyRecord, Body = unknown, Query = AnyReco
     readonly store: Store;
     tracing: boolean;
     bodySchema?: ValidateFunction<TSchema>;
+    pubsub: PubSub;
     responseSchema?: ValidateFunction<TSchema>;
     route?: string;
     terminated: boolean;

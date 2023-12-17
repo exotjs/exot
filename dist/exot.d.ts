@@ -1,8 +1,9 @@
 import { type TSchema, Static } from '@sinclair/typebox';
-import { AnyRecord, MergeParams, ErrorHandler, RouterInit, ExotInit, Adapter, WsHandler, StackHandler, StackHandlerOptions, TraceHandler, MaybePromise, ContextInterface } from './types';
+import { AnyRecord, MergeParams, ErrorHandler, RouterInit, ExotInit, Adapter, StackHandler, StackHandlerOptions, TraceHandler, MaybePromise, ContextInterface, WebSocketHandler } from './types';
 import { Context } from './context';
 import { Router } from './router';
 import { Events } from './events';
+import { PubSub } from './pubsub';
 import type { HTTPMethod } from 'find-my-way';
 export declare class Exot<Decorators extends AnyRecord = {}, Shared extends AnyRecord = {}, Store extends AnyRecord = {}, HandlerOptions extends AnyRecord = {}, LocalContext extends ContextInterface = ContextInterface<any, any, any, any, Shared, Store> & Decorators> {
     #private;
@@ -14,9 +15,10 @@ export declare class Exot<Decorators extends AnyRecord = {}, Shared extends AnyR
     readonly events: Events<LocalContext>;
     readonly shared: Shared;
     readonly stores: Store;
+    readonly pubsub: PubSub;
     errorHandler: ErrorHandler<LocalContext>;
     constructor(init?: ExotInit<HandlerOptions>);
-    get fetch(): (req: Request) => MaybePromise<Response>;
+    get fetch(): (req: Request, ...args: unknown[]) => MaybePromise<Response>;
     get prefix(): string | undefined;
     get routes(): any[];
     adapter<UseAdapter extends Adapter>(adapter: UseAdapter): UseAdapter extends Adapter ? Exot<Decorators, Shared, Store, LocalContext> : this;
@@ -31,12 +33,12 @@ export declare class Exot<Decorators extends AnyRecord = {}, Shared extends AnyR
     error(errorHandler: ErrorHandler<LocalContext>): void;
     store<const Name extends string, const Value>(name: Name, value: Value): Exot<Decorators, Shared, Store & {
         [name in Name]: Value;
-    }, HandlerOptions, LocalContext>;
-    store<const Object extends AnyRecord>(object: Object): Exot<Decorators, Shared, Store & Object, HandlerOptions, LocalContext>;
+    }>;
+    store<const Object extends AnyRecord>(object: Object): Exot<Decorators, Shared, Store & Object>;
     share<const Name extends string, const Value>(name: Name, value: Value): Exot<Decorators, Shared & {
         [name in Name]: Value;
-    }, Store, HandlerOptions, LocalContext>;
-    share<const Object extends AnyRecord>(object: Object): Exot<Decorators, Shared & Object, Store, HandlerOptions, LocalContext>;
+    }, Store>;
+    share<const Object extends AnyRecord>(object: Object): Exot<Decorators, Shared & Object, Store>;
     use<NewExot extends Exot<any, any, any, any> = this>(handler: NewExot): NewExot extends Exot<infer UseDecorators, infer UseShared, infer UseStore, infer UseHandlerOptions> ? Exot<Decorators & UseDecorators, Shared & UseShared, Store & UseStore, HandlerOptions & UseHandlerOptions> : this;
     use(handler: StackHandler<LocalContext>): this;
     group<const Path extends string>(path: Path, init?: ExotInit<HandlerOptions>): Exot<Decorators, Shared, Store, HandlerOptions, LocalContext>;
@@ -48,9 +50,8 @@ export declare class Exot<Decorators extends AnyRecord = {}, Shared extends AnyR
     patch<const Path extends string, const Params extends TSchema, const Body extends TSchema, const Query extends TSchema, const Response extends TSchema, const NewContext extends ContextInterface = ContextInterface<MergeParams<Path, Params>, Static<Body>, AnyRecord & Static<Query>, Static<Response>, Shared, Store> & Decorators>(path: Path, handler: StackHandler<NewContext>, options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions): this;
     post<const Path extends string, const Params extends TSchema, const Body extends TSchema, const Query extends TSchema, const Response extends TSchema, const NewContext extends ContextInterface = ContextInterface<MergeParams<Path, Params>, Static<Body>, AnyRecord & Static<Query>, Static<Response>, Shared, Store> & Decorators>(path: Path, handler: StackHandler<NewContext>, options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions): this;
     put<const Path extends string, const Params extends TSchema, const Body extends TSchema, const Query extends TSchema, const Response extends TSchema, const NewContext extends ContextInterface = ContextInterface<MergeParams<Path, Params>, Static<Body>, AnyRecord & Static<Query>, Static<Response>, Shared, Store> & Decorators>(path: Path, handler: StackHandler<NewContext>, options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions): this;
-    ws(path: string, handler: WsHandler<any>): this;
+    ws<UserData = any>(path: string, handler: WebSocketHandler<UserData>): this;
     handle(ctx: LocalContext): MaybePromise<unknown>;
-    onHandler(handler: StackHandler<LocalContext>): this;
     onRequest(handler: StackHandler<LocalContext>): this;
     onResponse(handler: StackHandler<LocalContext>): this;
     onRoute(handler: StackHandler<LocalContext>): this;

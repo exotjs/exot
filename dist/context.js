@@ -1,5 +1,6 @@
 import { validateSchema } from './validation';
 import { Cookies } from './cookies';
+import { RUNTIME } from './env';
 import { HttpHeaders } from './headers';
 import { parseUrl, parseQueryString, awaitMaybePromise } from './helpers';
 export class Context {
@@ -9,6 +10,7 @@ export class Context {
     store;
     tracing;
     bodySchema;
+    pubsub;
     responseSchema;
     route;
     terminated = false;
@@ -20,7 +22,7 @@ export class Context {
     #currentTrace;
     #set = {
         body: void 0,
-        headers: process.versions.bun ? new Headers() : new HttpHeaders(),
+        headers: RUNTIME === 'bun' ? new Headers() : new HttpHeaders(),
         status: 0,
     };
     constructor(req, params = {}, shared = {}, store = {}, tracing = false) {
@@ -29,17 +31,15 @@ export class Context {
         this.shared = shared;
         this.store = store;
         this.tracing = tracing;
-        /*
+        let parsed;
         if (typeof req.parsedUrl === 'function') {
-          const { path, querystring } = req.parsedUrl();
-          this.#path = path;
-          this.#querystring = querystring;
-        } else {
-        */
-        const { path, querystring } = parseUrl(this.req.url);
-        this.#path = path;
-        this.#querystring = querystring;
-        // }
+            parsed = req.parsedUrl();
+        }
+        else {
+            parsed = parseUrl(this.req.url);
+        }
+        this.#path = parsed.path;
+        this.#querystring = parsed.querystring;
     }
     get cookies() {
         if (!this.#cookies) {

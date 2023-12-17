@@ -1,12 +1,18 @@
 import { createServer } from 'node:http';
 import { Readable } from 'stream';
-import { awaitMaybePromise, parseFormData } from '../helpers';
+import { awaitMaybePromise, parseFormData, parseUrl } from '../helpers';
 import { HttpHeaders } from '../headers';
 import { HttpRequest } from '../request';
+import { ExotWebSocket } from '../websocket';
 const textDecoder = new TextDecoder();
-export default () => new NodeAdapter();
+export default (init = {}) => new NodeAdapter(init);
 export class NodeAdapter {
+    init;
     server = createServer();
+    #wsHandlers = {};
+    constructor(init = {}) {
+        this.init = init;
+    }
     async close() {
         return new Promise((resolve) => {
             this.server.close(() => {
@@ -26,6 +32,17 @@ export class NodeAdapter {
         });
     }
     mount(exot) {
+        this.#mountRequestHandler(exot);
+        this.#mountUpgradeHandler(exot);
+        return exot;
+    }
+    async fetch(req) {
+        return new Response('');
+    }
+    ws(path, handler) {
+        this.#wsHandlers[path] = handler;
+    }
+    #mountRequestHandler(exot) {
         this.server.on('request', (req, res) => {
             req.pause();
             const ctx = exot.context(new NodeRequest(req));
@@ -43,12 +60,43 @@ export class NodeAdapter {
                 ctx.destroy();
             });
         });
-        return exot;
     }
-    async fetch(req) {
-        return new Response('');
+    #mountUpgradeHandler(exot) {
+        this.server.on('upgrade', (req, socket, head) => {
+            const { path } = parseUrl(req.url);
+            const handler = this.#wsHandlers[path];
+            const wss = this.init.wss;
+            if (handler && wss) {
+                awaitMaybePromise(() => {
+                    if (handler.beforeUpgrade) {
+                        return handler.beforeUpgrade(new NodeRequest(req), socket, head);
+                    }
+                }, (userData) => {
+                    wss.handleUpgrade(req, socket, head, (ws) => {
+                        const nodeWebSocket = new NodeWebSocket(exot, ws, userData);
+                        wss.emit('connection', ws, req);
+                        ws.on('close', () => {
+                            handler.close?.(nodeWebSocket, userData);
+                        });
+                        ws.on('error', () => {
+                            // TODO:
+                        });
+                        ws.on('message', (data) => {
+                            handler.message?.(nodeWebSocket, data, userData);
+                        });
+                        awaitMaybePromise(() => handler.open?.(nodeWebSocket, userData), () => { }, (_err) => {
+                            socket.destroy();
+                        });
+                    });
+                }, (_err) => {
+                    socket.destroy();
+                });
+            }
+            else {
+                socket.destroy();
+            }
+        });
     }
-    ws(path, handler) { }
     #sendResponse(ctx, res) {
         res.statusCode = ctx.set.status || 200;
         const headers = ctx.set.headers;
@@ -60,6 +108,9 @@ export class NodeAdapter {
         }
         if (ctx.set.body instanceof Readable) {
             ctx.set.body.pipe(res);
+        }
+        else if (ctx.set.body instanceof ReadableStream) {
+            Readable.fromWeb(ctx.set.body).pipe(res);
         }
         else {
             res.end(ctx.set.body);
@@ -127,5 +178,13 @@ export class NodeRequest extends HttpRequest {
     }
     remoteAddress() {
         return this.raw.socket.remoteAddress || '';
+    }
+}
+export class NodeWebSocket extends ExotWebSocket {
+    constructor(exot, raw, userData) {
+        super(exot, raw, userData);
+        this.raw.on('close', () => {
+            this.exot.pubsub.unsubscribeAll(this.subscriber);
+        });
     }
 }

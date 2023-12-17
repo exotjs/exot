@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { type TSchema, Static } from '@sinclair/typebox';
 import {
   AnyRecord,
@@ -6,7 +7,6 @@ import {
   RouterInit,
   ExotInit,
   Adapter,
-  WsHandler,
   StackHandler,
   AnyStackHandlerOptions,
   StackHandlerOptions,
@@ -15,6 +15,7 @@ import {
   ChainFn,
   MaybePromise,
   ContextInterface,
+  WebSocketHandler,
 } from './types';
 import { NodeAdapter } from './adapters/node';
 import { Context } from './context';
@@ -23,9 +24,11 @@ import { BaseError, NotFoundError } from './errors';
 import { Router, isStaticPath, joinPaths, normalizePath } from './router';
 import { Events } from './events';
 import { awaitMaybePromise, chain, printTraces } from './helpers';
+import { BunAdapter } from './adapters/bun';
 import { FetchAdapter } from './adapters/fetch';
+import { PubSub } from './pubsub';
+import { RUNTIME } from './env';
 import type { HTTPMethod } from 'find-my-way';
-import { Readable } from 'node:stream';
 
 export class Exot<
   Decorators extends AnyRecord = {},
@@ -63,6 +66,8 @@ export class Exot<
 
   readonly stores: Store = {} as Store;
 
+  readonly pubsub = new PubSub();
+
   #adapter?: Adapter;
 
   #composed: boolean = false;
@@ -98,12 +103,13 @@ export class Exot<
   }
 
   get fetch() {
-    const adapter = new FetchAdapter();
-    adapter.mount(this as Exot<any, any, any, any>);
-    this.#compose();
+    const adapter = this.#ensureAdapter(RUNTIME === 'bun' ? BunAdapter : FetchAdapter);
+    if (!this.#composed) {
+      this.#compose();
+    }
     this.#ensureNotFoundHandler();
-    return (req: Request): MaybePromise<Response> => {
-      return adapter.fetch(req);
+    return (req: Request, ...args: unknown[]): MaybePromise<Response> => {
+      return adapter.fetch(req, ...args);
     };
   }
 
@@ -193,13 +199,13 @@ export class Exot<
   store<const Name extends string, const Value>(
     name: Name,
     value: Value
-  ): Exot<Decorators, Shared, Store & { [name in Name]: Value }, HandlerOptions, LocalContext>;
+  ): Exot<Decorators, Shared, Store & { [name in Name]: Value }>;
 
   store<const Object extends AnyRecord>(
     object: Object
-  ): Exot<Decorators, Shared, Store & Object, HandlerOptions, LocalContext>;
+  ): Exot<Decorators, Shared, Store & Object>;
 
-  store(name: string | AnyRecord, value?: any) {
+  store(name: string | AnyRecord, value?: any): Exot<any, Shared, Store> {
     if (typeof name === 'object') {
       Object.assign(this.stores, name);
     } else {
@@ -211,13 +217,13 @@ export class Exot<
   share<const Name extends string, const Value>(
     name: Name,
     value: Value
-  ): Exot<Decorators, Shared & { [name in Name]: Value }, Store, HandlerOptions, LocalContext>;
+  ): Exot<Decorators, Shared & { [name in Name]: Value }, Store>;
 
   share<const Object extends AnyRecord>(
     object: Object
-  ): Exot<Decorators, Shared & Object, Store, HandlerOptions, LocalContext>;
+  ): Exot<Decorators, Shared & Object, Store>;
 
-  share(name: string | AnyRecord, value?: any) {
+  share(name: string | AnyRecord, value?: any): Exot<any, Shared, Store> {
     if (typeof name === 'object') {
       Object.assign(this.shared, name);
     } else {
@@ -491,15 +497,15 @@ export class Exot<
     return this.add('PUT', path, handler, options);
   }
 
-  ws(path: string, handler: WsHandler<any>) {
-    if (!this.#adapter) {
-      throw new Error('Adapter not set.');
-    }
-    this.#adapter.ws(path, handler);
+  ws<UserData = any>(path: string, handler: WebSocketHandler<UserData>) {
+    this.#ensureAdapter().ws(path, handler);
     return this;
   }
 
   handle(ctx: LocalContext): MaybePromise<unknown> {
+    if (!this.#composed) {
+      this.#compose();
+    }
     return awaitMaybePromise(
       () =>
         awaitMaybePromise(
@@ -537,7 +543,6 @@ export class Exot<
         ),
       (body) => body,
       (err) => {
-        console.log('X', err)
         return chain(
           [
             () => this.errorHandler(err, ctx),
@@ -547,11 +552,6 @@ export class Exot<
         );
       }
     );
-  }
-
-  onHandler(handler: StackHandler<LocalContext>) {
-    this.events.on('handler', handler);
-    return this;
   }
 
   onRequest(handler: StackHandler<LocalContext>) {
@@ -577,6 +577,7 @@ export class Exot<
       Object.assign({}, this.stores),
       this.init.tracing
     );
+    ctx.pubsub = this.pubsub;
     Object.assign(ctx, this.decorators);
     return ctx as LocalContext;
   }
@@ -586,7 +587,9 @@ export class Exot<
   }
 
   async listen(port: number = 0): Promise<number> {
-    this.#compose();
+    if (!this.#composed) {
+      this.#compose();
+    }
     this.#ensureNotFoundHandler();
     return this.#ensureAdapter().listen(port);
   }
@@ -643,7 +646,6 @@ export class Exot<
     after: ChainFn<LocalContext>[] = []
   ) {
     const stack: ChainFn<LocalContext>[] = [
-      (ctx: LocalContext) => this.events.emit('handler', ctx),
       ...before,
     ];
     if (options.params) {
@@ -699,7 +701,7 @@ export class Exot<
     return handler;
   }
 
-  #ensureAdapter(defaultAdapter: new () => Adapter = NodeAdapter) {
+  #ensureAdapter(defaultAdapter: new () => Adapter = RUNTIME === 'bun' ? BunAdapter : NodeAdapter) {
     if (!this.#adapter) {
       this.adapter(new defaultAdapter());
     }

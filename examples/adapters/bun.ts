@@ -1,15 +1,8 @@
-import adapter from '../../lib/adapters/fetch';
 import { Exot } from '../../lib';
 
-const ex = new Exot()
-  // Mount FetchAdapter
-  .adapter(adapter())
-
-  .get('/', ({ text }) => {
-    // return 'Hello from Bun!';
-    // res.text('Hi');
-    // return 'Hi'
-    text('Hi')
+const exot = new Exot()
+  .get('/', () => {
+    return 'Hi';
   })
 
   .post('/', async ({ json }) => {
@@ -27,13 +20,40 @@ const ex = new Exot()
       query,
       remoteAddress,
     });
+  })
+
+  .post('/publish', async ({ json, pubsub }) => {
+    return {
+      subscribers: pubsub.publish('test_topic', await json()),
+    };
+  })
+  
+  .ws('/ws', {
+    beforeUpgrade(req: Request) {
+      return {
+        auth: req.headers.get('authentication'),
+      };
+    },
+    open(ws) {
+      ws.subscribe('test_topic');
+    },
+    message(_ws, data, userData) {
+      console.log('> received', data, userData);
+    },
   });
 
+console.log(`Server listening on ${await exot.listen(3000)}`);
+
 // export handler and optional port number
+/*
 export default {
   port: 3000,
-  fetch: ex.fetch,
+  fetch: exot.fetch,
+
+  // enable websockets by attaching `.websocket` from the BunAdapter
+  websocket: bunAdapter.websocket,
 };
+*/
 
 // or simply export x, as it exposes .fetch interface
 // export default x;

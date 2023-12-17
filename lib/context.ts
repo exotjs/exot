@@ -2,11 +2,13 @@ import { Readable } from 'node:stream';
 import { TSchema } from '@sinclair/typebox';
 import { validateSchema } from './validation';
 import { Cookies } from './cookies';
+import { RUNTIME } from './env';
 import { HttpHeaders } from './headers';
-import { chain, parseUrl, parseQueryString, awaitMaybePromise } from './helpers';
+import { parseUrl, parseQueryString, awaitMaybePromise } from './helpers';
 import type { ValidateFunction } from 'ajv';
 import type { AnyRecord, HTTPMethod, MaybePromise, Trace } from './types';
 import { HttpRequest } from './request';
+import { PubSub } from './pubsub';
 
 export class Context<
   Params = AnyRecord,
@@ -17,6 +19,8 @@ export class Context<
   Store = unknown,
 > {
   public bodySchema?: ValidateFunction<TSchema>;
+
+  public pubsub!: PubSub;
 
   public responseSchema?: ValidateFunction<TSchema>;
 
@@ -38,7 +42,7 @@ export class Context<
 
   #set = {
     body: void 0 as ResponseBody,
-    headers: process.versions.bun ? new Headers() : new HttpHeaders(),
+    headers: RUNTIME === 'bun' ? new Headers() : new HttpHeaders(),
     status: 0,
   };
 
@@ -49,17 +53,14 @@ export class Context<
     readonly store: Store = {} as Store,
     public tracing: boolean = false,
   ) {
-    /*
+    let parsed: { path: string, querystring: string };
     if (typeof req.parsedUrl === 'function') {
-      const { path, querystring } = req.parsedUrl();
-      this.#path = path;
-      this.#querystring = querystring;
+      parsed = req.parsedUrl();
     } else {
-    */
-      const { path, querystring } = parseUrl(this.req.url);
-      this.#path = path;
-      this.#querystring = querystring;
-    // }
+      parsed = parseUrl(this.req.url);
+    }
+    this.#path = parsed.path;
+    this.#querystring = parsed.querystring;
   }
 
   get cookies() {

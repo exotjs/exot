@@ -31,7 +31,9 @@ export function chain(fns, input, i = 0, terminateOnReturn = true) {
     }
     return chain(fns, input, i + 1, terminateOnReturn);
 }
-export const chainAll = (fns, input) => chain(fns, input, 0, false);
+export const chainAll = (fns, input) => {
+    return chain(fns, input, 0, false);
+};
 export function parseQueryString(querystring) {
     if (querystring[0] === '?') {
         querystring = querystring.slice(1);

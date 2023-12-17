@@ -1,3 +1,4 @@
+import { Readable } from 'node:stream';
 import { NodeAdapter } from './adapters/node';
 import { Context } from './context';
 import { compileSchema, validateSchema } from './validation';
@@ -5,8 +6,10 @@ import { BaseError, NotFoundError } from './errors';
 import { Router, isStaticPath, joinPaths, normalizePath } from './router';
 import { Events } from './events';
 import { awaitMaybePromise, chain, printTraces } from './helpers';
+import { BunAdapter } from './adapters/bun';
 import { FetchAdapter } from './adapters/fetch';
-import { Readable } from 'node:stream';
+import { PubSub } from './pubsub';
+import { RUNTIME } from './env';
 export class Exot {
     init;
     static createRouter(init) {
@@ -23,6 +26,7 @@ export class Exot {
     events;
     shared = {};
     stores = {};
+    pubsub = new PubSub();
     #adapter;
     #composed = false;
     #handlers = [];
@@ -44,12 +48,13 @@ export class Exot {
         }
     }
     get fetch() {
-        const adapter = new FetchAdapter();
-        adapter.mount(this);
-        this.#compose();
+        const adapter = this.#ensureAdapter(RUNTIME === 'bun' ? BunAdapter : FetchAdapter);
+        if (!this.#composed) {
+            this.#compose();
+        }
         this.#ensureNotFoundHandler();
-        return (req) => {
-            return adapter.fetch(req);
+        return (req, ...args) => {
+            return adapter.fetch(req, ...args);
         };
     }
     get prefix() {
@@ -169,13 +174,13 @@ export class Exot {
         return this.add('PUT', path, handler, options);
     }
     ws(path, handler) {
-        if (!this.#adapter) {
-            throw new Error('Adapter not set.');
-        }
-        this.#adapter.ws(path, handler);
+        this.#ensureAdapter().ws(path, handler);
         return this;
     }
     handle(ctx) {
+        if (!this.#composed) {
+            this.#compose();
+        }
         return awaitMaybePromise(() => awaitMaybePromise(() => chain([
             () => this.events.emit('request', ctx),
             () => chain(this.#stack, ctx),
@@ -201,16 +206,11 @@ export class Exot {
         }, (err) => {
             throw err;
         }), (body) => body, (err) => {
-            console.log('X', err);
             return chain([
                 () => this.errorHandler(err, ctx),
                 () => this.events.emit('error', ctx),
             ], ctx);
         });
-    }
-    onHandler(handler) {
-        this.events.on('handler', handler);
-        return this;
     }
     onRequest(handler) {
         this.events.on('request', handler);
@@ -226,6 +226,7 @@ export class Exot {
     }
     context(req) {
         const ctx = new Context(req, {}, this.shared, Object.assign({}, this.stores), this.init.tracing);
+        ctx.pubsub = this.pubsub;
         Object.assign(ctx, this.decorators);
         return ctx;
     }
@@ -233,7 +234,9 @@ export class Exot {
         return this.#ensureAdapter().close();
     }
     async listen(port = 0) {
-        this.#compose();
+        if (!this.#composed) {
+            this.#compose();
+        }
         this.#ensureNotFoundHandler();
         return this.#ensureAdapter().listen(port);
     }
@@ -276,7 +279,6 @@ export class Exot {
     }
     #composeHandler(handler, options = {}, before = [], after = []) {
         const stack = [
-            (ctx) => this.events.emit('handler', ctx),
             ...before,
         ];
         if (options.params) {
@@ -320,7 +322,7 @@ export class Exot {
         }
         return handler;
     }
-    #ensureAdapter(defaultAdapter = NodeAdapter) {
+    #ensureAdapter(defaultAdapter = RUNTIME === 'bun' ? BunAdapter : NodeAdapter) {
         if (!this.#adapter) {
             this.adapter(new defaultAdapter());
         }
