@@ -16,6 +16,9 @@ import {
   MaybePromise,
   ContextInterface,
   WebSocketHandler,
+  RouteParams,
+  EventHandler,
+  HandleOptions,
 } from './types';
 import { NodeAdapter } from './adapters/node';
 import { Context } from './context';
@@ -32,24 +35,22 @@ import type { HTTPMethod } from 'find-my-way';
 
 export class Exot<
   Decorators extends AnyRecord = {},
-  Shared extends AnyRecord = {},
   Store extends AnyRecord = {},
   HandlerOptions extends AnyRecord = {},
+  Params extends AnyRecord = {},
   LocalContext extends ContextInterface = ContextInterface<
+    Params,
     any,
     any,
     any,
-    any,
-    Shared,
     Store
-  > &
-    Decorators
+  > & Decorators
 > {
   static createRouter(init?: RouterInit): Router {
     return new Router(init);
   }
 
-  static defaultErrorHandler(err: any, ctx: Context) {
+  static defaultErrorHandler(err: any, ctx: ContextInterface) {
     ctx.set.status = err.statusCode || 500;
     ctx.json(err instanceof BaseError ? err : { error: err.message }, false);
   }
@@ -62,11 +63,11 @@ export class Exot<
 
   readonly events: Events<LocalContext>;
 
-  readonly shared: Shared = {} as Shared;
-
   readonly stores: Store = {} as Store;
 
   readonly pubsub = new PubSub();
+
+  prefix?: string;
 
   #adapter?: Adapter;
 
@@ -88,6 +89,7 @@ export class Exot<
   errorHandler: ErrorHandler<LocalContext> = Exot.defaultErrorHandler;
 
   constructor(readonly init: ExotInit<HandlerOptions> = {}) {
+    this.prefix = init.prefix;
     this.events = new Events<LocalContext>(this.init.name);
     if (init.tracing) {
       this.trace((ctx) => printTraces(ctx));
@@ -105,16 +107,12 @@ export class Exot<
   get fetch() {
     const adapter = this.#ensureAdapter(RUNTIME === 'bun' ? BunAdapter : FetchAdapter);
     if (!this.#composed) {
-      this.#compose();
+      this.compose();
     }
     this.#ensureNotFoundHandler();
     return (req: Request, ...args: unknown[]): MaybePromise<Response> => {
       return adapter.fetch(req, ...args);
     };
-  }
-
-  get prefix() {
-    return this.init.prefix;
   }
 
   get routes() {
@@ -137,7 +135,7 @@ export class Exot<
   adapter<UseAdapter extends Adapter>(
     adapter: UseAdapter
   ): UseAdapter extends Adapter
-    ? Exot<Decorators, Shared, Store, LocalContext>
+    ? Exot<Decorators, Store, LocalContext>
     : this;
 
   adapter<UseAdapter extends Adapter>(adapter: UseAdapter) {
@@ -146,23 +144,13 @@ export class Exot<
     return this;
   }
 
-  notFound<NewExot extends Exot<any, any, any, any> = this>(
+  notFound<NewExot extends Exot<any, any> = this>(
     handler: NewExot
-  ): NewExot extends Exot<infer UseDecorators, infer UseShared>
-    ? Exot<Decorators & UseDecorators, Shared & UseShared>
+  ): NewExot extends Exot<infer UseDecorators>
+    ? Exot<Decorators & UseDecorators>
     : this;
 
   notFound(handler: StackHandler<LocalContext>): this;
-
-  notFound<
-    const Params extends TSchema,
-    const Body extends TSchema,
-    const Query extends TSchema,
-    const Response extends TSchema
-  >(
-    plugin: StackHandler<LocalContext>,
-    options: StackHandlerOptions<Params, Body, Query, Response, Store>
-  ): this;
 
   notFound(handler: StackHandler<LocalContext>) {
     this.#notFoundFn = this.#createHandlerFn(handler);
@@ -177,13 +165,13 @@ export class Exot<
   decorate<const Name extends string, const Value>(
     name: Name,
     value: Value
-  ): Exot<Decorators & { [name in Name]: Value }, Shared, Store>;
+  ): Exot<Decorators & { [name in Name]: Value }, Store>;
 
   decorate<const Object extends AnyRecord>(
     object: Object
-  ): Exot<Decorators & Object, Shared, Store>;
+  ): Exot<Decorators & Object, Store>;
 
-  decorate(name: string | AnyRecord, value?: any): Exot<any, Shared, Store> {
+  decorate(name: string | AnyRecord, value?: any): Exot<any, Store> {
     if (typeof name === 'object') {
       Object.assign(this.decorators, name);
     } else {
@@ -199,13 +187,13 @@ export class Exot<
   store<const Name extends string, const Value>(
     name: Name,
     value: Value
-  ): Exot<Decorators, Shared, Store & { [name in Name]: Value }>;
+  ): Exot<Decorators, Store & { [name in Name]: Value }>;
 
   store<const Object extends AnyRecord>(
     object: Object
-  ): Exot<Decorators, Shared, Store & Object>;
+  ): Exot<Decorators, Store & Object>;
 
-  store(name: string | AnyRecord, value?: any): Exot<any, Shared, Store> {
+  store(name: string | AnyRecord, value?: any): Exot<any, Store> {
     if (typeof name === 'object') {
       Object.assign(this.stores, name);
     } else {
@@ -214,45 +202,102 @@ export class Exot<
     return this;
   }
 
-  share<const Name extends string, const Value>(
-    name: Name,
-    value: Value
-  ): Exot<Decorators, Shared & { [name in Name]: Value }, Store>;
+  use<
+    const Path extends string,
+    const LocalParams extends TSchema,
+    const Body extends TSchema,
+    const Query extends TSchema,
+    const Response extends TSchema,
+    const NewContext extends ContextInterface = ContextInterface<
+      Params & MergeParams<Path, LocalParams>,
+      Static<Body>,
+      AnyRecord & Static<Query>,
+      Static<Response>,
+      Store
+    > &
+      Decorators
+  >(
+    path: Path,
+    handler: StackHandler<NewContext>,
+    options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions
+  ): this;
 
-  share<const Object extends AnyRecord>(
-    object: Object
-  ): Exot<Decorators, Shared & Object, Store>;
+  use<
+    const Path extends string,
+    const LocaleParams extends TSchema,
+    const Body extends TSchema,
+    const Query extends TSchema,
+    const Response extends TSchema,
+    const NewContext extends ContextInterface = ContextInterface<
+      Params & MergeParams<Path, LocaleParams>,
+      Static<Body>,
+      AnyRecord & Static<Query>,
+      Static<Response>,
+      Store
+    > &
+      Decorators,
+    const NewExot extends Exot<any, any> = this
+  >(
+    path: Path,
+    handler: NewExot,
+    options?: StackHandlerOptions<LocaleParams, Body, Query, Response, Store> & HandlerOptions
+  ): NewExot extends Exot<infer UseDecorators, infer UseStore, infer UseHandlerOptions>
+    ? Exot<Decorators & UseDecorators, Store & UseStore, HandlerOptions & UseHandlerOptions>
+    : this;
 
-  share(name: string | AnyRecord, value?: any): Exot<any, Shared, Store> {
-    if (typeof name === 'object') {
-      Object.assign(this.shared, name);
-    } else {
-      this.shared[name as keyof Shared] = value as any;
-    }
-    return this;
-  }
-
-  use<NewExot extends Exot<any, any, any, any> = this>(
+  use<
+    const NewExot extends Exot<any, any> = this
+  >(
     handler: NewExot
-  ): NewExot extends Exot<infer UseDecorators, infer UseShared, infer UseStore, infer UseHandlerOptions>
-    ? Exot<Decorators & UseDecorators, Shared & UseShared, Store & UseStore, HandlerOptions & UseHandlerOptions>
+  ): NewExot extends Exot<infer UseDecorators, infer UseStore, infer UseHandlerOptions>
+    ? Exot<Decorators & UseDecorators, Store & UseStore, HandlerOptions & UseHandlerOptions>
     : this;
 
   use(handler: StackHandler<LocalContext>): this;
 
-  use(handler: StackHandler<LocalContext>) {
+  use(
+    ...args: unknown[]
+  ) {
+    let path: string | undefined = void 0;
+    let handler: StackHandler<LocalContext> = () => {};
+    let options: AnyStackHandlerOptions = {};
+    if (typeof args[0] === 'string' && args[1]) {
+      path = args[0];
+      handler = args[1] as StackHandler<LocalContext>;
+      options = args[2] as AnyStackHandlerOptions;
+    } else {
+      handler = args[0] as StackHandler<LocalContext>;
+      options = args[1] as AnyStackHandlerOptions;
+    }
     this.#handlers.push({
+      path,
       handler,
+      options: {...this.init.handlerOptions, ...options},
     });
-    if (handler instanceof Exot && handler.prefix) {
-      this.all(handler.prefix, handler);
-      this.all(handler.prefix + '/*', handler);
+    if (handler instanceof Exot || this.#isExotCompatible(handler)) {
+      // merge decorators and stores
+      if ('decorators' in handler) {
+        Object.assign(this.decorators, handler.decorators);
+      }
+      if ('stores' in handler) {
+        Object.assign(this.stores, handler.stores);
+      }
+      if (path && 'init' in handler) {
+        (handler as Exot).prefix = path;
+      }
+      if ('prefix' in handler) {
+        const prefix = handler.prefix as string;
+        this.all(prefix, handler);
+        this.all(prefix + '/*', handler);
+      }
     }
     return this;
   }
 
-  group<const Path extends string>(path: Path, init?: ExotInit<HandlerOptions>) {
-    const group = new Exot<Decorators, Shared, Store, HandlerOptions, LocalContext>({
+  group<
+    const Path extends string,
+  >(path: Path, init?: ExotInit<HandlerOptions>) {
+    const group = new Exot<Decorators, Store, RouteParams<Path>, HandlerOptions>({
       ...init,
       prefix: path,
     });
@@ -262,16 +307,15 @@ export class Exot<
 
   add<
     const Path extends string,
-    const Params extends TSchema,
+    const LocalParams extends TSchema,
     const Body extends TSchema,
     const Query extends TSchema,
     const Response extends TSchema,
     const NewContext extends ContextInterface = ContextInterface<
-      MergeParams<Path, Params>,
+      Params & MergeParams<Path, LocalParams>,
       Static<Body>,
       AnyRecord & Static<Query>,
       Static<Response>,
-      Shared,
       Store
     > &
       Decorators
@@ -279,7 +323,7 @@ export class Exot<
     method: HTTPMethod,
     path: Path,
     handler: StackHandler<NewContext>,
-    options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions
+    options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions
   ): this;
   add(
     method: HTTPMethod,
@@ -298,23 +342,22 @@ export class Exot<
 
   all<
     const Path extends string,
-    const Params extends TSchema,
+    const LocalParams extends TSchema,
     const Body extends TSchema,
     const Query extends TSchema,
     const Response extends TSchema,
     const NewContext extends ContextInterface = ContextInterface<
-      MergeParams<Path, Params>,
+      Params & MergeParams<Path, LocalParams>,
       Static<Body>,
       AnyRecord & Static<Query>,
       Static<Response>,
-      Shared,
       Store
     > &
       Decorators
   >(
     path: Path,
     handler: StackHandler<NewContext>,
-    options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions
+    options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions
   ): this;
   all(
     path: string,
@@ -331,23 +374,22 @@ export class Exot<
 
   delete<
     const Path extends string,
-    const Params extends TSchema,
+    const LocalParams extends TSchema,
     const Body extends TSchema,
     const Query extends TSchema,
     const Response extends TSchema,
     const NewContext extends ContextInterface = ContextInterface<
-      MergeParams<Path, Params>,
+      Params & MergeParams<Path, LocalParams>,
       Static<Body>,
       AnyRecord & Static<Query>,
       Static<Response>,
-      Shared,
       Store
     > &
       Decorators
   >(
     path: Path,
     handler: StackHandler<NewContext>,
-    options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions
+    options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions
   ): this;
   delete(
     path: string,
@@ -359,23 +401,22 @@ export class Exot<
 
   get<
     const Path extends string,
-    const Params extends TSchema,
+    const LocalParams extends TSchema,
     const Body extends TSchema,
     const Query extends TSchema,
     const Response extends TSchema,
     const NewContext extends ContextInterface = ContextInterface<
-      MergeParams<Path, Params>,
+      Params & MergeParams<Path, LocalParams>,
       Static<Body>,
       AnyRecord & Static<Query>,
       Static<Response>,
-      Shared,
       Store
     > &
       Decorators
   >(
     path: Path,
     handler: StackHandler<NewContext>,
-    options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions
+    options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions
   ): this;
   get(
     path: string,
@@ -387,23 +428,22 @@ export class Exot<
 
   options<
     const Path extends string,
-    const Params extends TSchema,
+    const LocalParams extends TSchema,
     const Body extends TSchema,
     const Query extends TSchema,
     const Response extends TSchema,
     const NewContext extends ContextInterface = ContextInterface<
-      MergeParams<Path, Params>,
+      Params & MergeParams<Path, LocalParams>,
       Static<Body>,
       AnyRecord & Static<Query>,
       Static<Response>,
-      Shared,
       Store
     > &
       Decorators
   >(
     path: Path,
     handler: StackHandler<NewContext>,
-    options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions
+    options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions
   ): this;
   options(
     path: string,
@@ -415,23 +455,22 @@ export class Exot<
 
   patch<
     const Path extends string,
-    const Params extends TSchema,
+    const LocalParams extends TSchema,
     const Body extends TSchema,
     const Query extends TSchema,
     const Response extends TSchema,
     const NewContext extends ContextInterface = ContextInterface<
-      MergeParams<Path, Params>,
+      Params & MergeParams<Path, LocalParams>,
       Static<Body>,
       AnyRecord & Static<Query>,
       Static<Response>,
-      Shared,
       Store
     > &
       Decorators
   >(
     path: Path,
     handler: StackHandler<NewContext>,
-    options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions
+    options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions
   ): this;
   patch(
     path: string,
@@ -443,23 +482,22 @@ export class Exot<
 
   post<
     const Path extends string,
-    const Params extends TSchema,
+    const LocalParams extends TSchema,
     const Body extends TSchema,
     const Query extends TSchema,
     const Response extends TSchema,
     const NewContext extends ContextInterface = ContextInterface<
-      MergeParams<Path, Params>,
+      Params & MergeParams<Path, LocalParams>,
       Static<Body>,
       AnyRecord & Static<Query>,
       Static<Response>,
-      Shared,
       Store
     > &
       Decorators
   >(
     path: Path,
     handler: StackHandler<NewContext>,
-    options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions
+    options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions
   ): this;
   post(
     path: string,
@@ -471,23 +509,22 @@ export class Exot<
 
   put<
     const Path extends string,
-    const Params extends TSchema,
+    const LocalParams extends TSchema,
     const Body extends TSchema,
     const Query extends TSchema,
     const Response extends TSchema,
     const NewContext extends ContextInterface = ContextInterface<
-      MergeParams<Path, Params>,
+      Params & MergeParams<Path, LocalParams>,
       Static<Body>,
       AnyRecord & Static<Query>,
       Static<Response>,
-      Shared,
       Store
     > &
       Decorators
   >(
     path: Path,
     handler: StackHandler<NewContext>,
-    options?: StackHandlerOptions<Params, Body, Query, Response, Store> & HandlerOptions
+    options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions
   ): this;
   put(
     path: string,
@@ -502,16 +539,16 @@ export class Exot<
     return this;
   }
 
-  handle(ctx: LocalContext): MaybePromise<unknown> {
+  handle(ctx: LocalContext, options: HandleOptions = {}): MaybePromise<unknown> {
     if (!this.#composed) {
-      this.#compose();
+      this.compose();
     }
     return awaitMaybePromise(
       () =>
         awaitMaybePromise(
           () =>
             chain([
-              () => this.events.emit('request', ctx),
+              () => options.emitEvents ? this.events.emit('request', ctx) : void 0,
               () => chain(this.#stack, ctx),
             ]),
           (body) => {
@@ -526,7 +563,7 @@ export class Exot<
                     return this.#notFoundFn(ctx);
                   }
                 },
-                () => this.events.emit('response', ctx),
+                () => options.emitEvents ? this.events.emit('response', ctx) : void 0,
                 () => {
                   if (this.#traceHandler) {
                     return this.#traceHandler(ctx);
@@ -545,8 +582,8 @@ export class Exot<
       (err) => {
         return chain(
           [
-            () => this.errorHandler(err, ctx),
-            () => this.events.emit('error', ctx),
+            () => options.emitEvents ? this.events.emit('error', ctx) : void 0,
+            () => options.useErrorHandler === false ? void 0 : this.errorHandler(err, ctx),
           ],
           ctx
         );
@@ -554,30 +591,33 @@ export class Exot<
     );
   }
 
-  onRequest(handler: StackHandler<LocalContext>) {
+  onRequest(handler: EventHandler<LocalContext>) {
     this.events.on('request', handler);
     return this;
   }
 
-  onResponse(handler: StackHandler<LocalContext>) {
+  onResponse(handler: EventHandler<LocalContext>) {
     this.events.on('response', handler);
     return this;
   }
 
-  onRoute(handler: StackHandler<LocalContext>) {
+  onRoute(handler: EventHandler<LocalContext>) {
     this.events.on('route', handler);
     return this;
   }
 
+  onStart(handler: EventHandler<number>) {
+    this.events.on('start', handler);
+    return this;
+  }
+
   context(req: Request): LocalContext {
-    const ctx = new Context(
+    const ctx = new Context({
+      pubsub: this.pubsub,
       req,
-      {},
-      this.shared,
-      Object.assign({}, this.stores),
-      this.init.tracing
-    );
-    ctx.pubsub = this.pubsub;
+      store: Object.assign({}, this.stores),
+      tracingEnabled: this.init.tracing,
+    });
     Object.assign(ctx, this.decorators);
     return ctx as LocalContext;
   }
@@ -588,54 +628,62 @@ export class Exot<
 
   async listen(port: number = 0): Promise<number> {
     if (!this.#composed) {
-      this.#compose();
+      this.compose();
     }
     this.#ensureNotFoundHandler();
-    return this.#ensureAdapter().listen(port);
+    const boundPort = await this.#ensureAdapter().listen(port);
+    await this.events.emit('start', boundPort);
+    return boundPort;
   }
 
-  #compose(parent?: Exot<any, any, any, any>) {
-    if (this.#composed) {
-      throw new Error('Instance has been already composed.');
-    }
-    if (parent) {
-      // forward events from the parent
-      parent.events.forwardTo(this.events);
-    }
-    for (let { method, path, handler, options } of this.#handlers) {
-      if (path) {
-        path = joinPaths(
-          parent?.init.prefix || '',
-          this.init.prefix || '',
-          path
-        );
-        const stack = this.#composeHandler(
-          handler,
-          options,
-          [(ctx) => this.events.emit('route', ctx)],
-          [
-            // always terminate routes
-            (ctx) => {
-              ctx.end();
-            },
-          ]
-        );
-        if (method) {
-          this.#ensureRouter().add(method, path, stack);
+  compose(parent?: Exot<any, any, any, any>) {
+    if (!this.#composed) {
+      if (parent) {
+        // forward events from the parent
+        parent.events.forwardTo(this.events);
+      }
+      for (let { method, path, handler, options } of this.#handlers) {
+        if (path) {
+          path = joinPaths(
+            parent?.init.prefix || '',
+            this.init.prefix || '',
+            path
+          );
+          const stack = this.#composeHandler(
+            handler,
+            options,
+            [
+              (ctx) => this.events.emit('route', ctx),
+            ],
+            [
+              // always terminate routes
+              (ctx) => {
+                ctx.end();
+
+              },
+            ]
+          );
+          let router = this.#ensureRouter();
+          if (router.has(method || 'GET', path)) {
+            router = this.#ensureRouter(true);
+          }
+          if (method) {
+            router.add(method, path, stack);
+          } else {
+            router.all(path, stack);
+          }
         } else {
-          this.#ensureRouter().all(path, stack);
+          // other handlers
+          this.#stack.push(...this.#composeHandler(handler));
         }
-      } else {
-        // other handlers
-        this.#stack.push(...this.#composeHandler(handler));
+        if (handler instanceof Exot || this.#isExotCompatible(handler)) {
+          (handler as Exot<any, any, any, LocalContext>).compose(this);
+        }
       }
-      if (handler instanceof Exot && !handler.#composed) {
-        handler.#compose(this);
+      this.#composed = true;
+      if (this.init.onComposed) {
+        this.init.onComposed(parent);
       }
-    }
-    this.#composed = true;
-    if (this.init.onComposed) {
-      this.init.onComposed(parent);
     }
   }
 
@@ -646,8 +694,12 @@ export class Exot<
     after: ChainFn<LocalContext>[] = []
   ) {
     const stack: ChainFn<LocalContext>[] = [
+      (ctx) => ctx.terminated ? null : void 0,
       ...before,
     ];
+    if (options.transform) {
+      stack.push((ctx: LocalContext) => options.transform!(ctx));
+    }
     if (options.params) {
       const paramsSchema = compileSchema(options.params);
       stack.push((ctx: LocalContext) =>
@@ -680,11 +732,14 @@ export class Exot<
   }
 
   #createHandlerFn(handler: StackHandler<LocalContext>) {
-    if (handler instanceof Exot) {
-      return (ctx: LocalContext) => handler.handle(ctx);
+    if (handler instanceof Exot || this.#isExotCompatible(handler)) {
+      return (ctx: LocalContext) => (handler as Exot<any, any, any, LocalContext>).handle(ctx, {
+        emitEvents: false,
+        useErrorHandler: false,
+      });
     } else if (handler instanceof Router) {
       const fn = (ctx: LocalContext) => {
-        const route = ctx._trace(
+        const route = ctx.trace(
           () => handler.find(ctx.method, ctx.path),
           '@router:find',
           this.init.name
@@ -714,12 +769,14 @@ export class Exot<
     }
   }
 
-  #ensureRouter(): Router {
-    const last = this.#stack[this.#stack.length - 1] as ChainFn & {
-      _router?: Router;
-    };
-    if (last?.['_router'] instanceof Router) {
-      return last['_router'] as Router;
+  #ensureRouter(createNew: boolean = false): Router {
+    if (!createNew) {
+      const last = this.#stack[this.#stack.length - 1] as ChainFn & {
+        _router?: Router;
+      };
+      if (last?.['_router'] instanceof Router) {
+        return last['_router'] as Router;
+      }
     }
     const router = Exot.createRouter(this.init.router);
     this.#stack.push(...this.#composeHandler(router));
@@ -739,5 +796,10 @@ export class Exot<
     } else if (body !== void 0 && body !== null) {
       ctx.set.body = body;
     }
+  }
+
+  #isExotCompatible(inst: unknown) {
+    // @ts-expect-error
+    return inst && 'handle' in inst && typeof inst['handle'] === 'function';
   }
 }

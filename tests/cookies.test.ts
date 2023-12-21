@@ -8,14 +8,14 @@ describe('Cookies', () => {
   let ctx: Context;
 
   beforeEach(() => {
-    ctx = new Context(
-      new Request('http://localhost/', {
+    ctx = new Context({
+      req: new Request('http://localhost/', {
         headers: {
           cookie: `cookie1=abc;cookie2=123;cookie3=value%20with%20special%20chars%20%40%23%24%3B;cookie4=1`,
         },
         method: 'POST',
       }),
-    );
+    });
     cookies = new Cookies(ctx);
   });
 

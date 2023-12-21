@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { TSchema } from '@sinclair/typebox';
 import { validateSchema } from './validation';
@@ -6,7 +7,7 @@ import { RUNTIME } from './env';
 import { HttpHeaders } from './headers';
 import { parseUrl, parseQueryString, awaitMaybePromise } from './helpers';
 import type { ValidateFunction } from 'ajv';
-import type { AnyRecord, HTTPMethod, MaybePromise, Trace } from './types';
+import type { AnyRecord, ContextInit, HTTPMethod, MaybePromise, Trace } from './types';
 import { HttpRequest } from './request';
 import { PubSub } from './pubsub';
 
@@ -15,20 +16,29 @@ export class Context<
   Body = unknown,
   Query = AnyRecord,
   ResponseBody = unknown,
-  Shared = unknown,
   Store = unknown,
 > {
   public bodySchema?: ValidateFunction<TSchema>;
 
+  readonly params: Params;
+
   public pubsub!: PubSub;
+
+  readonly req: Request & HttpRequest;
+
+  readonly requestId: string = randomUUID();
 
   public responseSchema?: ValidateFunction<TSchema>;
 
   public route?: string;
 
+  readonly store: Store;
+
   public terminated: boolean = false;
 
   public traces: Trace[] = [];
+
+  public tracingEnabled: boolean;
 
   #cookies?: Cookies;
 
@@ -47,15 +57,21 @@ export class Context<
   };
 
   constructor(
-    readonly req: Request & HttpRequest,
-    readonly params: Params = {} as Params,
-    readonly shared: Shared = {} as Shared,
-    readonly store: Store = {} as Store,
-    public tracing: boolean = false,
+    init: ContextInit
   ) {
+    const {
+      req,
+      params = {},
+      store = {},
+      tracingEnabled = false,
+    } = init;
+    this.req = req;
+    this.params = params as Params;
+    this.store = store as Store;
+    this.tracingEnabled = tracingEnabled;
     let parsed: { path: string, querystring: string };
-    if (typeof req.parsedUrl === 'function') {
-      parsed = req.parsedUrl();
+    if (typeof this.req.parsedUrl === 'function') {
+      parsed = this.req.parsedUrl();
     } else {
       parsed = parseUrl(this.req.url);
     }
@@ -117,8 +133,15 @@ export class Context<
   }
 
   get arrayBuffer() {
-    return () => {
-     return this.req.arrayBuffer();
+    return (value?: ArrayBuffer) => {
+      if (value !== void 0) {
+        if (!this.set.headers.has('content-type')) {
+          this.set.headers.set('content-type', 'application/octet-stream');
+        }
+        this.set.body = value as ResponseBody;
+      } else {
+        return this.req.arrayBuffer();
+      }
     };
   }
 
@@ -201,26 +224,24 @@ export class Context<
   }
 
   get trace() {
-    return this._trace;
-  }
-
-  _trace<T>(fn: () => T, name: string = fn.name, desc?: string): MaybePromise<T> {
-    if (!this.tracing) {
-      return fn();
-    }
-    this.traceStart(name, desc);
-    return awaitMaybePromise(
-      fn,
-      (result) => {
-        this.traceEnd()
-        return result;
-      },
-      (err) => {
-        this.traceEnd(err)
-        throw err;
-      },
-      this,
-    );
+    return <T>(fn: () => T, name: string = fn.name, desc?: string): MaybePromise<T> => {
+      if (!this.tracingEnabled) {
+        return fn();
+      }
+      this.traceStart(name, desc);
+      return awaitMaybePromise(
+        fn,
+        (result) => {
+          this.traceEnd()
+          return result;
+        },
+        (err) => {
+          this.traceEnd(err)
+          throw err;
+        },
+        this,
+      );
+    };
   }
 
   destroy() {
@@ -229,8 +250,6 @@ export class Context<
     this.#cookies = void 0;
     this.#query = void 0;
     this.#currentTrace = void 0;
-    //this.req.destroy?.();
-    // this.res.destroy();
   }
 
   end() {
@@ -239,14 +258,14 @@ export class Context<
 
   #validateBody<T = Body>(body: T): T {
     if (this.bodySchema) {
-      return this._trace<T>(() => validateSchema(this.bodySchema!, body, 'body') as T, '@validate:body') as T;
+      return this.trace<T>(() => validateSchema(this.bodySchema!, body, 'body') as T, '@validate:body') as T;
     }
     return body;
   }
 
   #validateResponse<T = ResponseBody>(response: T): T {
     if (this.responseSchema) {
-      return this._trace<T>(() => validateSchema(this.responseSchema!, response, 'response') as T, '@validate:response') as T;
+      return this.trace<T>(() => validateSchema(this.responseSchema!, response, 'response') as T, '@validate:response') as T;
     }
     return response;
   }

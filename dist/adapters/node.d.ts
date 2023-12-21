@@ -30,7 +30,7 @@ export declare class NodeAdapter implements Adapter {
     constructor(init?: NodeAdapterInit);
     close(): Promise<void>;
     listen(port: number): Promise<number>;
-    mount(exot: Exot): Exot<{}, {}, {}, {}, import("../types").ContextInterface<any, any, any, any, {}, {}>>;
+    mount(exot: Exot): Exot<{}, {}, {}, {}, import("../types").ContextInterface<{}, any, any, any, {}>>;
     fetch(req: Request): Promise<Response>;
     ws(path: string, handler: WebSocketHandler<any>): void;
 }

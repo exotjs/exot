@@ -24,9 +24,9 @@ export class Exot {
     }
     decorators = {};
     events;
-    shared = {};
     stores = {};
     pubsub = new PubSub();
+    prefix;
     #adapter;
     #composed = false;
     #handlers = [];
@@ -36,6 +36,7 @@ export class Exot {
     errorHandler = Exot.defaultErrorHandler;
     constructor(init = {}) {
         this.init = init;
+        this.prefix = init.prefix;
         this.events = new Events(this.init.name);
         if (init.tracing) {
             this.trace((ctx) => printTraces(ctx));
@@ -50,15 +51,12 @@ export class Exot {
     get fetch() {
         const adapter = this.#ensureAdapter(RUNTIME === 'bun' ? BunAdapter : FetchAdapter);
         if (!this.#composed) {
-            this.#compose();
+            this.compose();
         }
         this.#ensureNotFoundHandler();
         return (req, ...args) => {
             return adapter.fetch(req, ...args);
         };
-    }
-    get prefix() {
-        return this.init.prefix;
     }
     get routes() {
         const routes = [];
@@ -111,22 +109,40 @@ export class Exot {
         }
         return this;
     }
-    share(name, value) {
-        if (typeof name === 'object') {
-            Object.assign(this.shared, name);
+    use(...args) {
+        let path = void 0;
+        let handler = () => { };
+        let options = {};
+        if (typeof args[0] === 'string' && args[1]) {
+            path = args[0];
+            handler = args[1];
+            options = args[2];
         }
         else {
-            this.shared[name] = value;
+            handler = args[0];
+            options = args[1];
         }
-        return this;
-    }
-    use(handler) {
         this.#handlers.push({
+            path,
             handler,
+            options: { ...this.init.handlerOptions, ...options },
         });
-        if (handler instanceof Exot && handler.prefix) {
-            this.all(handler.prefix, handler);
-            this.all(handler.prefix + '/*', handler);
+        if (handler instanceof Exot || this.#isExotCompatible(handler)) {
+            // merge decorators and stores
+            if ('decorators' in handler) {
+                Object.assign(this.decorators, handler.decorators);
+            }
+            if ('stores' in handler) {
+                Object.assign(this.stores, handler.stores);
+            }
+            if (path && 'init' in handler) {
+                handler.prefix = path;
+            }
+            if ('prefix' in handler) {
+                const prefix = handler.prefix;
+                this.all(prefix, handler);
+                this.all(prefix + '/*', handler);
+            }
         }
         return this;
     }
@@ -177,12 +193,12 @@ export class Exot {
         this.#ensureAdapter().ws(path, handler);
         return this;
     }
-    handle(ctx) {
+    handle(ctx, options = {}) {
         if (!this.#composed) {
-            this.#compose();
+            this.compose();
         }
         return awaitMaybePromise(() => awaitMaybePromise(() => chain([
-            () => this.events.emit('request', ctx),
+            () => options.emitEvents ? this.events.emit('request', ctx) : void 0,
             () => chain(this.#stack, ctx),
         ]), (body) => {
             if (body !== void 0) {
@@ -195,7 +211,7 @@ export class Exot {
                         return this.#notFoundFn(ctx);
                     }
                 },
-                () => this.events.emit('response', ctx),
+                () => options.emitEvents ? this.events.emit('response', ctx) : void 0,
                 () => {
                     if (this.#traceHandler) {
                         return this.#traceHandler(ctx);
@@ -207,8 +223,8 @@ export class Exot {
             throw err;
         }), (body) => body, (err) => {
             return chain([
-                () => this.errorHandler(err, ctx),
-                () => this.events.emit('error', ctx),
+                () => options.emitEvents ? this.events.emit('error', ctx) : void 0,
+                () => options.useErrorHandler === false ? void 0 : this.errorHandler(err, ctx),
             ], ctx);
         });
     }
@@ -224,9 +240,17 @@ export class Exot {
         this.events.on('route', handler);
         return this;
     }
+    onStart(handler) {
+        this.events.on('start', handler);
+        return this;
+    }
     context(req) {
-        const ctx = new Context(req, {}, this.shared, Object.assign({}, this.stores), this.init.tracing);
-        ctx.pubsub = this.pubsub;
+        const ctx = new Context({
+            pubsub: this.pubsub,
+            req,
+            store: Object.assign({}, this.stores),
+            tracingEnabled: this.init.tracing,
+        });
         Object.assign(ctx, this.decorators);
         return ctx;
     }
@@ -235,52 +259,63 @@ export class Exot {
     }
     async listen(port = 0) {
         if (!this.#composed) {
-            this.#compose();
+            this.compose();
         }
         this.#ensureNotFoundHandler();
-        return this.#ensureAdapter().listen(port);
+        const boundPort = await this.#ensureAdapter().listen(port);
+        await this.events.emit('start', boundPort);
+        return boundPort;
     }
-    #compose(parent) {
-        if (this.#composed) {
-            throw new Error('Instance has been already composed.');
-        }
-        if (parent) {
-            // forward events from the parent
-            parent.events.forwardTo(this.events);
-        }
-        for (let { method, path, handler, options } of this.#handlers) {
-            if (path) {
-                path = joinPaths(parent?.init.prefix || '', this.init.prefix || '', path);
-                const stack = this.#composeHandler(handler, options, [(ctx) => this.events.emit('route', ctx)], [
-                    // always terminate routes
-                    (ctx) => {
-                        ctx.end();
-                    },
-                ]);
-                if (method) {
-                    this.#ensureRouter().add(method, path, stack);
+    compose(parent) {
+        if (!this.#composed) {
+            if (parent) {
+                // forward events from the parent
+                parent.events.forwardTo(this.events);
+            }
+            for (let { method, path, handler, options } of this.#handlers) {
+                if (path) {
+                    path = joinPaths(parent?.init.prefix || '', this.init.prefix || '', path);
+                    const stack = this.#composeHandler(handler, options, [
+                        (ctx) => this.events.emit('route', ctx),
+                    ], [
+                        // always terminate routes
+                        (ctx) => {
+                            ctx.end();
+                        },
+                    ]);
+                    let router = this.#ensureRouter();
+                    if (router.has(method || 'GET', path)) {
+                        router = this.#ensureRouter(true);
+                    }
+                    if (method) {
+                        router.add(method, path, stack);
+                    }
+                    else {
+                        router.all(path, stack);
+                    }
                 }
                 else {
-                    this.#ensureRouter().all(path, stack);
+                    // other handlers
+                    this.#stack.push(...this.#composeHandler(handler));
+                }
+                if (handler instanceof Exot || this.#isExotCompatible(handler)) {
+                    handler.compose(this);
                 }
             }
-            else {
-                // other handlers
-                this.#stack.push(...this.#composeHandler(handler));
+            this.#composed = true;
+            if (this.init.onComposed) {
+                this.init.onComposed(parent);
             }
-            if (handler instanceof Exot && !handler.#composed) {
-                handler.#compose(this);
-            }
-        }
-        this.#composed = true;
-        if (this.init.onComposed) {
-            this.init.onComposed(parent);
         }
     }
     #composeHandler(handler, options = {}, before = [], after = []) {
         const stack = [
+            (ctx) => ctx.terminated ? null : void 0,
             ...before,
         ];
+        if (options.transform) {
+            stack.push((ctx) => options.transform(ctx));
+        }
         if (options.params) {
             const paramsSchema = compileSchema(options.params);
             stack.push((ctx) => validateSchema(paramsSchema, ctx.params, 'params'));
@@ -305,12 +340,15 @@ export class Exot {
         return stack;
     }
     #createHandlerFn(handler) {
-        if (handler instanceof Exot) {
-            return (ctx) => handler.handle(ctx);
+        if (handler instanceof Exot || this.#isExotCompatible(handler)) {
+            return (ctx) => handler.handle(ctx, {
+                emitEvents: false,
+                useErrorHandler: false,
+            });
         }
         else if (handler instanceof Router) {
             const fn = (ctx) => {
-                const route = ctx._trace(() => handler.find(ctx.method, ctx.path), '@router:find', this.init.name);
+                const route = ctx.trace(() => handler.find(ctx.method, ctx.path), '@router:find', this.init.name);
                 if (route?.stack) {
                     Object.assign(ctx.params, route.params);
                     ctx.route = route.route || '/';
@@ -333,10 +371,12 @@ export class Exot {
             this.#notFoundFn = Exot.throwNotFound;
         }
     }
-    #ensureRouter() {
-        const last = this.#stack[this.#stack.length - 1];
-        if (last?.['_router'] instanceof Router) {
-            return last['_router'];
+    #ensureRouter(createNew = false) {
+        if (!createNew) {
+            const last = this.#stack[this.#stack.length - 1];
+            if (last?.['_router'] instanceof Router) {
+                return last['_router'];
+            }
         }
         const router = Exot.createRouter(this.init.router);
         this.#stack.push(...this.#composeHandler(router));
@@ -355,5 +395,9 @@ export class Exot {
         else if (body !== void 0 && body !== null) {
             ctx.set.body = body;
         }
+    }
+    #isExotCompatible(inst) {
+        // @ts-expect-error
+        return inst && 'handle' in inst && typeof inst['handle'] === 'function';
     }
 }

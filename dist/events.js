@@ -1,5 +1,4 @@
 import { chainAll } from './helpers';
-const EVENTS = ['error', 'publish', 'request', 'response', 'route', 'start', 'subscribe'];
 export class Events {
     name;
     _listeners = {
@@ -9,7 +8,6 @@ export class Events {
         response: [],
         route: [],
         start: [],
-        subscribe: [],
     };
     _forward = [];
     constructor(name) {
@@ -33,15 +31,21 @@ export class Events {
         ], arg);
     }
     on(event, handler) {
-        const fn = (ctx) => ctx._trace(() => handler(ctx), '@on:' + event, this.name);
-        fn['_handler'] = handler;
-        this._listeners[event].push(fn);
+        this._listeners[event].push(this.#createHandler(event, handler));
     }
     off(event, handler) {
         // @ts-expect-error
-        const idx = this._listeners[event].findIndex((fn) => fn['_handler'] === handler);
+        const idx = this._listeners[event].findIndex((fn) => fn === handler || fn['_handler'] === handler);
         if (idx >= 0) {
             this._listeners[event].splice(idx, 1);
         }
+    }
+    #createHandler(event, handler) {
+        if (['start', 'publish'].includes(event)) {
+            return handler;
+        }
+        const fn = (ctx) => ctx.trace(() => handler(ctx), '@on:' + event, this.name);
+        fn['_handler'] = handler;
+        return fn;
     }
 }

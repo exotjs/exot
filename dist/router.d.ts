@@ -18,4 +18,5 @@ export declare class Router {
     add(method: HTTPMethod, route: string, stack: ChainFn<any>[]): void;
     all(route: string, stack: ChainFn<any>[]): void;
     find(method: HTTPMethod, path: string): RouterFindResult | null;
+    has(method: HTTPMethod, route: string): boolean;
 }

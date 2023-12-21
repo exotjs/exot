@@ -1,10 +1,14 @@
 import type { Readable } from 'node:stream';
 import type { TSchema, Static } from '@sinclair/typebox';
 import type { Context } from './context';
-import { Exot } from './exot';
+import type { Exot } from './exot';
+import type { ExotWebSocket } from './websocket';
 import type { Router } from './router';
 import type { Config, HTTPMethod, HTTPVersion } from 'find-my-way';
-import { ExotWebSocket } from './websocket';
+import type { HttpRequest } from './request';
+import type { PubSub } from './pubsub';
+
+const EVENTS = ['error', 'publish', 'request', 'response', 'route', 'start'] as const;
 
 export type { HTTPMethod } from 'find-my-way';
 
@@ -18,6 +22,11 @@ export type Runtime =
   | 'node'
   | 'unknown'
   | 'workerd';
+
+
+export type ExotEvent = (typeof EVENTS)[number];
+
+export type EventHandler<T = undefined> = (arg: T) => Promise<void> | void;
 
 type PickUndefined<T> = {
   [P in keyof T as undefined extends T[P] ? P : never]: T[P];
@@ -33,8 +42,8 @@ type OptionalDefined<T> = {
   [K in keyof PickDefined<T>]: T[K];
 };
 
-export interface ExotInit<UseHandlerOptions extends AnyRecord = {}> {
-  handlerOptions?: UseHandlerOptions;
+export interface ExotInit<UseStackHandlerOptions extends AnyRecord = {}> {
+  handlerOptions?: UseStackHandlerOptions;
   name?: string;
   prefix?: string;
   router?: RouterInit;
@@ -48,25 +57,36 @@ export type AnyExot<T extends ContextInterface = ContextInterface> = Exot<any, a
 
 export type AnyStackHandlerOptions = StackHandlerOptions<any, any, any, any, any>;
 
+export interface ContextInit<
+  Params = AnyRecord,
+  Store = unknown,
+> {
+  req: Request & HttpRequest;
+  params?: Params;
+  pubsub?: PubSub;
+  store?: Store;
+  tracingEnabled?: boolean;
+}
+
 export interface ContextInterface<
   Params = AnyRecord,
   Body = unknown,
   Query = AnyRecord,
   ResponseBody = unknown,
-  Shared = unknown,
   Store = unknown,
 > extends Context<
   Params,
   Body,
   Query,
   ResponseBody,
-  Shared,
   Store
 > {
-  json(value: any): void;
-  json(): Promise<any>;
-
-  // TODO: all ctx methods
+  json<T = Body>(value: T, validate?: boolean): void;
+  json<T = ResponseBody>(): Promise<T>;
+  stream<T = ReadableStream | Readable>(value: T): void;
+  stream<T = ReadableStream | Readable>(): T;
+  text<T = Body>(value: T): void;
+  text<T = ResponseBody>(): Promise<T>;
 }
 
 export type StackHandler<T extends ContextInterface> =
@@ -82,10 +102,8 @@ export interface StackHandlerOptions<
   Store extends AnyRecord
 > {
   transform?: (
-    ctx: Context<any, Body, Query, Response, any, Store>
-  ) =>
-    | Promise<TrasformResult<Static<Params>, Static<Query>>>
-    | TrasformResult<Static<Params>, Static<Query>>;
+    ctx: Context<any, Body, Query, Response, Store>
+  ) => MaybePromise<void>;
   body?: Body;
   params?: Params;
   query?: Query;
@@ -93,9 +111,9 @@ export interface StackHandlerOptions<
   store?: OptionalDefined<Store>;
 };
 
-export type ErrorHandler<LocalContext extends Context> = (err: any, ctx: LocalContext) => Promise<void> | void;
+export type ErrorHandler<LocalContext extends ContextInterface> = (err: any, ctx: LocalContext) => Promise<void> | void;
 
-export type TraceHandler<LocalContext extends Context> = (ctx: LocalContext) => Promise<void> | void;
+export type TraceHandler<LocalContext extends ContextInterface> = (ctx: LocalContext) => Promise<void> | void;
 
 export type MaybePromise<T = unknown> = Promise<T> | T;
 
@@ -125,14 +143,9 @@ export interface WebSocketHandler<UserData> {
   open?: (ws: ExotWebSocket<any, UserData>, userData: UserData) => MaybePromise<void>;
 };
 
-export type TrasformResult<Params, Query> = {
-  params?: Params;
-  query?: Query;
-};
-
 // https://lihautan.com/extract-parameters-type-from-string-literal-types-with-typescript/
 type IsOptionalParameter<Part> = Part extends `:${infer ParamName}?` ? ParamName : never;
-type IsParameter<Part> = Part extends `:${infer ParamName}?` ? never : Part extends `:${infer ParamName}` ? ParamName : never;
+type IsParameter<Part> = Part extends `:${string}?` ? never : Part extends `:${infer ParamName}` ? ParamName : never;
 type FilteredParts<Path> = Path extends `${infer PartA}/${infer PartB}`
   ? IsParameter<PartA> | FilteredParts<PartB>
   : IsParameter<Path>;
@@ -144,25 +157,6 @@ export type RouteParams<Path> = {
 } & {
   [Key in FilteredOptionalParts<Path> as Key]: string | undefined;
 };
-
-export interface HandlerOptions<
-  Params extends TSchema,
-  Body extends TSchema,
-  Query extends TSchema,
-  Response extends TSchema,
-  Store extends AnyRecord
-> {
-  transform?: (
-    ctx: Context<any, Body, Query, Response, any, Store>
-  ) =>
-    | Promise<TrasformResult<Static<Params>, Static<Query>>>
-    | TrasformResult<Static<Params>, Static<Query>>;
-  body?: Body;
-  params?: Params;
-  query?: Query;
-  response?: Response;
-  scope?: OptionalDefined<Store>;
-}
 
 export type ContentType =
   | 'application/json'
@@ -209,17 +203,9 @@ export interface Adapter<WsHandler = any> {
   ws(path: string, handler: WsHandler): void;
 }
 
-/*
-export interface WebSocket<Raw, UserData = any> {
-  raw: Raw;
-  userData: UserData | undefined;
-  close: () => void;
-  send: (data: any) => void;
-  publish: (topic: string, data: any) => void;
-  subscribe: (topic: string) => void;
-  unsubscribe: (topic: string) => void;
-  unsubscribeAll: () => void;
-}
-*/
-
 export type PubSubHandler = (topic: string, data: ArrayBuffer | string | null) => void;
+
+export interface HandleOptions {
+  emitEvents?: boolean;
+  useErrorHandler?: boolean;
+}

@@ -1,20 +1,21 @@
+import { randomUUID } from 'node:crypto';
 import { validateSchema } from './validation';
 import { Cookies } from './cookies';
 import { RUNTIME } from './env';
 import { HttpHeaders } from './headers';
 import { parseUrl, parseQueryString, awaitMaybePromise } from './helpers';
 export class Context {
-    req;
-    params;
-    shared;
-    store;
-    tracing;
     bodySchema;
+    params;
     pubsub;
+    req;
+    requestId = randomUUID();
     responseSchema;
     route;
+    store;
     terminated = false;
     traces = [];
+    tracingEnabled;
     #cookies;
     #path;
     #query;
@@ -25,15 +26,15 @@ export class Context {
         headers: RUNTIME === 'bun' ? new Headers() : new HttpHeaders(),
         status: 0,
     };
-    constructor(req, params = {}, shared = {}, store = {}, tracing = false) {
+    constructor(init) {
+        const { req, params = {}, store = {}, tracingEnabled = false, } = init;
         this.req = req;
         this.params = params;
-        this.shared = shared;
         this.store = store;
-        this.tracing = tracing;
+        this.tracingEnabled = tracingEnabled;
         let parsed;
-        if (typeof req.parsedUrl === 'function') {
-            parsed = req.parsedUrl();
+        if (typeof this.req.parsedUrl === 'function') {
+            parsed = this.req.parsedUrl();
         }
         else {
             parsed = parseUrl(this.req.url);
@@ -85,8 +86,16 @@ export class Context {
         return this.#set;
     }
     get arrayBuffer() {
-        return () => {
-            return this.req.arrayBuffer();
+        return (value) => {
+            if (value !== void 0) {
+                if (!this.set.headers.has('content-type')) {
+                    this.set.headers.set('content-type', 'application/octet-stream');
+                }
+                this.set.body = value;
+            }
+            else {
+                return this.req.arrayBuffer();
+            }
         };
     }
     get formData() {
@@ -167,20 +176,19 @@ export class Context {
         };
     }
     get trace() {
-        return this._trace;
-    }
-    _trace(fn, name = fn.name, desc) {
-        if (!this.tracing) {
-            return fn();
-        }
-        this.traceStart(name, desc);
-        return awaitMaybePromise(fn, (result) => {
-            this.traceEnd();
-            return result;
-        }, (err) => {
-            this.traceEnd(err);
-            throw err;
-        }, this);
+        return (fn, name = fn.name, desc) => {
+            if (!this.tracingEnabled) {
+                return fn();
+            }
+            this.traceStart(name, desc);
+            return awaitMaybePromise(fn, (result) => {
+                this.traceEnd();
+                return result;
+            }, (err) => {
+                this.traceEnd(err);
+                throw err;
+            }, this);
+        };
     }
     destroy() {
         this.bodySchema = void 0;
@@ -188,21 +196,19 @@ export class Context {
         this.#cookies = void 0;
         this.#query = void 0;
         this.#currentTrace = void 0;
-        //this.req.destroy?.();
-        // this.res.destroy();
     }
     end() {
         this.terminated = true;
     }
     #validateBody(body) {
         if (this.bodySchema) {
-            return this._trace(() => validateSchema(this.bodySchema, body, 'body'), '@validate:body');
+            return this.trace(() => validateSchema(this.bodySchema, body, 'body'), '@validate:body');
         }
         return body;
     }
     #validateResponse(response) {
         if (this.responseSchema) {
-            return this._trace(() => validateSchema(this.responseSchema, response, 'response'), '@validate:response');
+            return this.trace(() => validateSchema(this.responseSchema, response, 'response'), '@validate:response');
         }
         return response;
     }

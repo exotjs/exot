@@ -1,11 +1,18 @@
+/// <reference types="node" />
+import type { Readable } from 'node:stream';
 import type { TSchema, Static } from '@sinclair/typebox';
 import type { Context } from './context';
-import { Exot } from './exot';
+import type { Exot } from './exot';
+import type { ExotWebSocket } from './websocket';
 import type { Router } from './router';
 import type { Config, HTTPMethod, HTTPVersion } from 'find-my-way';
-import { ExotWebSocket } from './websocket';
+import type { HttpRequest } from './request';
+import type { PubSub } from './pubsub';
+declare const EVENTS: readonly ["error", "publish", "request", "response", "route", "start"];
 export type { HTTPMethod } from 'find-my-way';
 export type Runtime = 'bun' | 'deno' | 'edge-light' | 'fastly' | 'lagon' | 'netlify' | 'node' | 'unknown' | 'workerd';
+export type ExotEvent = (typeof EVENTS)[number];
+export type EventHandler<T = undefined> = (arg: T) => Promise<void> | void;
 type PickUndefined<T> = {
     [P in keyof T as undefined extends T[P] ? P : never]: T[P];
 };
@@ -17,8 +24,8 @@ type OptionalDefined<T> = {
 } & {
     [K in keyof PickDefined<T>]: T[K];
 };
-export interface ExotInit<UseHandlerOptions extends AnyRecord = {}> {
-    handlerOptions?: UseHandlerOptions;
+export interface ExotInit<UseStackHandlerOptions extends AnyRecord = {}> {
+    handlerOptions?: UseStackHandlerOptions;
     name?: string;
     prefix?: string;
     router?: RouterInit;
@@ -28,21 +35,32 @@ export interface ExotInit<UseHandlerOptions extends AnyRecord = {}> {
 export type AnyRecord = Record<string, any>;
 export type AnyExot<T extends ContextInterface = ContextInterface> = Exot<any, any, any, T>;
 export type AnyStackHandlerOptions = StackHandlerOptions<any, any, any, any, any>;
-export interface ContextInterface<Params = AnyRecord, Body = unknown, Query = AnyRecord, ResponseBody = unknown, Shared = unknown, Store = unknown> extends Context<Params, Body, Query, ResponseBody, Shared, Store> {
-    json(value: any): void;
-    json(): Promise<any>;
+export interface ContextInit<Params = AnyRecord, Store = unknown> {
+    req: Request & HttpRequest;
+    params?: Params;
+    pubsub?: PubSub;
+    store?: Store;
+    tracingEnabled?: boolean;
+}
+export interface ContextInterface<Params = AnyRecord, Body = unknown, Query = AnyRecord, ResponseBody = unknown, Store = unknown> extends Context<Params, Body, Query, ResponseBody, Store> {
+    json<T = Body>(value: T, validate?: boolean): void;
+    json<T = ResponseBody>(): Promise<T>;
+    stream<T = ReadableStream | Readable>(value: T): void;
+    stream<T = ReadableStream | Readable>(): T;
+    text<T = Body>(value: T): void;
+    text<T = ResponseBody>(): Promise<T>;
 }
 export type StackHandler<T extends ContextInterface> = ((ctx: T) => unknown) | AnyExot<T> | Router;
 export interface StackHandlerOptions<Params extends TSchema, Body extends TSchema, Query extends TSchema, Response extends TSchema, Store extends AnyRecord> {
-    transform?: (ctx: Context<any, Body, Query, Response, any, Store>) => Promise<TrasformResult<Static<Params>, Static<Query>>> | TrasformResult<Static<Params>, Static<Query>>;
+    transform?: (ctx: Context<any, Body, Query, Response, Store>) => MaybePromise<void>;
     body?: Body;
     params?: Params;
     query?: Query;
     response?: Response;
     store?: OptionalDefined<Store>;
 }
-export type ErrorHandler<LocalContext extends Context> = (err: any, ctx: LocalContext) => Promise<void> | void;
-export type TraceHandler<LocalContext extends Context> = (ctx: LocalContext) => Promise<void> | void;
+export type ErrorHandler<LocalContext extends ContextInterface> = (err: any, ctx: LocalContext) => Promise<void> | void;
+export type TraceHandler<LocalContext extends ContextInterface> = (ctx: LocalContext) => Promise<void> | void;
 export type MaybePromise<T = unknown> = Promise<T> | T;
 export type ChainFnOld<Input = any, Result = unknown> = (input: Input) => MaybePromise<Result>;
 export type ChainFn<Input = unknown> = (input: Input) => MaybePromise<unknown>;
@@ -61,12 +79,8 @@ export interface WebSocketHandler<UserData> {
     message?: (ws: ExotWebSocket<any, UserData>, message: ArrayBuffer | Uint8Array | string, userData: UserData) => MaybePromise<void>;
     open?: (ws: ExotWebSocket<any, UserData>, userData: UserData) => MaybePromise<void>;
 }
-export type TrasformResult<Params, Query> = {
-    params?: Params;
-    query?: Query;
-};
 type IsOptionalParameter<Part> = Part extends `:${infer ParamName}?` ? ParamName : never;
-type IsParameter<Part> = Part extends `:${infer ParamName}?` ? never : Part extends `:${infer ParamName}` ? ParamName : never;
+type IsParameter<Part> = Part extends `:${string}?` ? never : Part extends `:${infer ParamName}` ? ParamName : never;
 type FilteredParts<Path> = Path extends `${infer PartA}/${infer PartB}` ? IsParameter<PartA> | FilteredParts<PartB> : IsParameter<Path>;
 type FilteredOptionalParts<Path> = Path extends `${infer PartA}/${infer PartB}` ? IsOptionalParameter<PartA> | FilteredOptionalParts<PartB> : IsOptionalParameter<Path>;
 export type RouteParams<Path> = {
@@ -74,14 +88,6 @@ export type RouteParams<Path> = {
 } & {
     [Key in FilteredOptionalParts<Path> as Key]: string | undefined;
 };
-export interface HandlerOptions<Params extends TSchema, Body extends TSchema, Query extends TSchema, Response extends TSchema, Store extends AnyRecord> {
-    transform?: (ctx: Context<any, Body, Query, Response, any, Store>) => Promise<TrasformResult<Static<Params>, Static<Query>>> | TrasformResult<Static<Params>, Static<Query>>;
-    body?: Body;
-    params?: Params;
-    query?: Query;
-    response?: Response;
-    scope?: OptionalDefined<Store>;
-}
 export type ContentType = 'application/json' | 'application/x-www-form-urlencoded' | 'multipart/form-data' | 'text/plain' | string;
 export interface Route {
     method: HTTPMethod;
@@ -113,3 +119,7 @@ export interface Adapter<WsHandler = any> {
     ws(path: string, handler: WsHandler): void;
 }
 export type PubSubHandler = (topic: string, data: ArrayBuffer | string | null) => void;
+export interface HandleOptions {
+    emitEvents?: boolean;
+    useErrorHandler?: boolean;
+}

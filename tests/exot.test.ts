@@ -72,18 +72,6 @@ describe('Exot', () => {
         });
       });
     });
-    
-    describe('.share()', () => {
-      it('should add shared vars', () => {
-        const fn = () => {};
-        exot.share('test', 'test value');
-        exot.share('fn', fn);
-        expect(exot.shared).toEqual({
-          'test': 'test value',
-          'fn': fn,
-        });
-      });
-    });
 
     describe('.store()', () => {
       it('should add stores', () => {
@@ -110,7 +98,7 @@ describe('Exot', () => {
     });
 
     describe('.handle()', () => {
-      let ctx: ContextInterface<any, any, any, any, any, any>;
+      let ctx: ContextInterface<any, any, any, any, any>;
 
       beforeEach(() => {
         ctx = exot.context(new Request('http://localhost'));

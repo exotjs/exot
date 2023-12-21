@@ -1,4 +1,3 @@
-import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { Events } from '../lib/events';
 import { Context } from '../lib/context';
@@ -9,19 +8,11 @@ describe('Events', () => {
 
   beforeEach(() => {
     events = new Events();
-    ctx = new Context(
-      {
-        buffer: Promise.resolve(Buffer.from('')),
-        headers: {},
+    ctx = new Context({
+      req: new Request('http://localhost/', {
         method: 'POST',
-        path: '/',
-        querystring: '',
-        remoteAddress: '',
-        stream: new Readable(),
-      },
-      {
-      },
-    );
+      }),
+    });
   });
 
   it('should execute attached listeners', async () => {

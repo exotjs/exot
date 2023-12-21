@@ -1,6 +1,5 @@
 import qs from 'fast-querystring';
-import { Context } from './context';
-import type { ChainFn, MaybePromise, Trace } from './types';
+import type { ChainFn, ContextInterface, MaybePromise, Trace } from './types';
 
 export function awaitMaybePromise<T>(
   fn: ChainFn<T>,
@@ -56,7 +55,7 @@ export function parseQueryString(querystring: string) {
   return qs.parse(querystring);
 }
 
-export function printTraces<Ctx extends Context>(
+export function printTraces<Ctx extends ContextInterface>(
   ctx: Ctx,
   warnAboveTime: number = 200,
   traces: Trace[] = ctx.traces,

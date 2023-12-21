@@ -77,4 +77,8 @@ export class Router {
     }
     return null;
   }
+
+  has(method: HTTPMethod, route: string) {
+    return !!this.staticRoutes[method + normalizePath(route, this.ignoreTrailingSlash)] || this.fmw.hasRoute(method, route);
+  }
 }

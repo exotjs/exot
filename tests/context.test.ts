@@ -20,16 +20,16 @@ describe('Context', () => {
       'X-Forwarded-For': '127.0.0.1',
       'X-Header': 'test',
     });
-    ctx = new Context(
-      new Request('http://localhost/hello/world?search=test', {
+    ctx = new Context({
+      req: new Request('http://localhost/hello/world?search=test', {
         body,
         headers,
         method: 'POST',
       }),
-      {
+      params: {
         name: 'world',
       },
-    );
+    });
   });
 
   describe('.cookies', () => {
@@ -178,7 +178,7 @@ describe('Context', () => {
       form.set('field2', 'test 2');
       const { body, contentType } = await serializeFormData(form)
       ctx.req.formData = () => Promise.resolve(parseFormData(contentType, body));
-      ctx.req.headers['content-type'] = contentType;
+      ctx.req.headers.set('content-type', contentType);
       const data = await ctx.formData();
       expect(data).toBeInstanceOf(FormData);
       expect(data.get('field1')).toEqual('test 1');
@@ -221,7 +221,7 @@ describe('Context', () => {
 
     describe('Tracing enabled', () => {
       it('should add entry to .traces', async () => {
-        ctx.tracing = true;
+        ctx.tracingEnabled = true;
         expect(ctx.traces.length).toEqual(0);
         await ctx.trace(async () => {
           await new Promise((resolve) => setTimeout(resolve, 100));
@@ -235,7 +235,7 @@ describe('Context', () => {
 
       it('should add error to .traces', async () => {
         const err = new Error('test error');
-        ctx.tracing = true;
+        ctx.tracingEnabled = true;
         expect(ctx.traces.length).toEqual(0);
         expect(async () => {
           await ctx.trace(() => {

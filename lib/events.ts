@@ -1,25 +1,16 @@
 import { chainAll } from './helpers';
-import { ChainFn, ContextInterface, MaybePromise, StackHandler } from './types';
-
-const EVENTS = ['error', 'publish', 'request', 'response', 'route', 'start', 'subscribe'] as const;
-
-type AllowedEvents = (typeof EVENTS)[number];
-
-type EventsHandler<LocalContext extends ContextInterface> = (
-  ...args: any[]
-) => (Promise<void> | void) | StackHandler<LocalContext>
+import { ChainFn, ContextInterface, ExotEvent, EventHandler, MaybePromise } from './types';
 
 export class Events<
   LocalContext extends ContextInterface
 > {
-  private readonly _listeners: Record<AllowedEvents, ChainFn<LocalContext>[]> = {
+  private readonly _listeners: Record<ExotEvent, ChainFn<LocalContext>[]> = {
     error: [],
     publish: [],
     request: [],
     response: [],
     route: [],
     start: [],
-    subscribe: [],
   };
 
   private readonly _forward: Events<LocalContext>[] = [];
@@ -32,12 +23,11 @@ export class Events<
     this._forward.push(events);
   }
 
-  emit(event: 'error', ctx: LocalContext): MaybePromise<any>;
-  emit(event: 'publish', data: [string, Uint8Array]): MaybePromise<any>;
-  emit(event: 'request', ctx: LocalContext): MaybePromise<any>;
-  emit(event: 'response', ctx: LocalContext): MaybePromise<any>;
-  emit(event: 'route', ctx: LocalContext): MaybePromise<any>;
-  emit(event: AllowedEvents, arg: any): MaybePromise<any> {
+  emit(event: 'error', err: unknown): MaybePromise<any>;
+  emit(event: 'publish', data: [string, ArrayBuffer | string]): MaybePromise<any>;
+  emit(event: 'request' | 'response' | 'route', ctx: LocalContext): MaybePromise<any>;
+  emit(event: 'start', port: number): MaybePromise<any>;
+  emit(event: ExotEvent, arg?: any): MaybePromise<any> {
     const lenListeners = this._listeners[event]?.length || 0;
     const lenForward = this._forward.length;
     if (!lenListeners && !lenForward) {
@@ -53,21 +43,39 @@ export class Events<
   }
 
   on(
-    event: 'request' | 'response' | 'route',
-    handler: StackHandler<LocalContext>
+    event: 'error',
+    handler: EventHandler<unknown>
   ): void;
-
-  on(event: AllowedEvents, handler: EventsHandler<LocalContext>) {
-    const fn = (ctx: LocalContext) => ctx._trace(() => handler(ctx), '@on:' + event, this.name);
-    fn['_handler'] = handler;
-    this._listeners[event].push(fn);
+  on(
+    event: 'publish',
+    handler: EventHandler<[string, ArrayBuffer | string]>
+  ): void;
+  on(
+    event: 'request' | 'response' | 'route',
+    handler: EventHandler<LocalContext>
+  ): void;
+  on(
+    event: 'start',
+    handler: EventHandler<number>
+  ): void;
+  on(event: ExotEvent, handler: EventHandler<any>) {
+    this._listeners[event].push(this.#createHandler(event, handler));
   }
 
-  off(event: AllowedEvents, handler: EventsHandler<LocalContext>) {
+  off(event: ExotEvent, handler: EventHandler<any>) {
     // @ts-expect-error
-    const idx = this._listeners[event].findIndex((fn) => fn['_handler'] === handler);
+    const idx = this._listeners[event].findIndex((fn) => fn === handler || fn['_handler'] === handler);
     if (idx >= 0) {
       this._listeners[event].splice(idx, 1);
     }
+  }
+
+  #createHandler(event: ExotEvent, handler: EventHandler<any>) {
+    if (['start', 'publish'].includes(event)) {
+      return handler;
+    }
+    const fn = (ctx: LocalContext) => ctx.trace(() => handler(ctx), '@on:' + event, this.name);
+    fn['_handler'] = handler;
+    return fn;
   }
 }

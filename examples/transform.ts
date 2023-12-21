@@ -11,13 +11,10 @@ const ex = new Exot()
       addedProp: t.String(),
       integer: t.Integer(),
     }),
-    transform: ({ params }) => {
-      return {
-        params: {
-          ...params,
-          addedProp: 'test',
-        },
-      };
+    transform: (ctx) => {
+      Object.assign(ctx.params, {
+        addedProp: 'test',
+      });
     },
   });
 

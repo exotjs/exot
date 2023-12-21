@@ -1,6 +1,6 @@
 {
   "name": "@exotjs/exot",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A cross-runtime TypeScript framework for server applications.",
   "author": "Daniel Regeci",
   "license": "MIT",
@@ -98,5 +98,8 @@
     "typescript": "^5.2.2",
     "vitest": "^1.0.1",
     "ws": "^8.15.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
