@@ -4,15 +4,15 @@ import { Exot } from '../lib';
 
 const ex = new Exot()
   // Return this file using streams
-  .get('/stream.ts', async ({ stream, set }) => {
-    set.headers.set('content-type', 'text/plain');
+  .get('/stream.ts', async ({ stream, res }) => {
+    res.headers.set('content-type', 'text/plain');
     stream(createReadStream(new URL(import.meta.url).pathname));
   })
   
   // Event stream
   // test with `curl http://localhost:3000/event_stream --no-buffer --output -`
-  .get('/event_stream', ({ set }) => {
-    set.headers.set('content-type', 'text/event-stream');
+  .get('/event_stream', ({ res }) => {
+    res.headers.set('content-type', 'text/event-stream');
     let iterations = 0;
     return new Readable({
       read() {

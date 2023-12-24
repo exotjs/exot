@@ -48,7 +48,7 @@ describe('Cookies', () => {
       cookies.set('testcookie2', 'testvalue2', {
         path: '/test'
       });
-      expect(ctx.set.headers.getSetCookie()).toEqual([
+      expect(ctx.res.headers.getSetCookie()).toEqual([
         'testcookie1=testvalue1; Secure; SameSite=Strict',
         'testcookie2=testvalue2; Path=/test',
       ]);
@@ -60,7 +60,7 @@ describe('Cookies', () => {
       cookies.delete('testcookie2', {
         path: '/test'
       });
-      expect(ctx.set.headers.getSetCookie()).toEqual(['testcookie2=; Path=/test; Expires=Thu, 01 Jan 1970 00:00:00 GMT']);
+      expect(ctx.res.headers.getSetCookie()).toEqual(['testcookie2=; Path=/test; Expires=Thu, 01 Jan 1970 00:00:00 GMT']);
     });
   });
 

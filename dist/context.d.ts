@@ -30,7 +30,7 @@ export declare class Context<Params = AnyRecord, Body = unknown, Query = AnyReco
     get querystring(): string;
     get query(): Query;
     get remoteAddress(): string | null;
-    get set(): {
+    get res(): {
         body: ResponseBody;
         headers: Headers | HttpHeaders;
         status: number;

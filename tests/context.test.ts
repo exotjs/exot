@@ -252,39 +252,11 @@ describe('Context', () => {
     });
   });
 
-  /*
-  describe('.destroy()', () => {
-    it('should destroy the context and call destroy() on ctx.req and ctx.req', async () => {
-      const destroyReqFn = vi.fn();
-      const ctx = new Context(
-        {
-          body: null,
-          headers: new Headers(),
-          method: 'GET',
-          url: '/',
-          destroy: destroyReqFn,
-          arrayBuffer: () => Promise.resolve(Buffer.from(body)),
-          formData: () => Promise.resolve(new FormData()),
-          json: () => Promise.resolve(JSON.stringify(body)),
-          text: () => Promise.resolve(body),
-        },
-        {},
-      );
-      const destroyResFn = vi.spyOn(ctx.set, 'destroy');
-      await ctx.arrayBuffer();
-      expect(await ctx.text()).toEqual(body);
-      ctx.destroy();
-      expect(destroyReqFn).toHaveBeenCalled();
-      expect(destroyResFn).toHaveBeenCalled();
-    });
-  });
-  */
-
-  describe('.set.', () => {
+  describe('.res.', () => {
     describe('.headers', () => {
       it('should set response headers', () => {
-        ctx.set.headers.set('x-test', 'test')
-        expect(Object.fromEntries(ctx.set.headers)).toEqual({
+        ctx.res.headers.set('x-test', 'test')
+        expect(Object.fromEntries(ctx.res.headers)).toEqual({
           'x-test': 'test',
         });
       });
@@ -292,9 +264,9 @@ describe('Context', () => {
 
     describe('.statusCode', () => {
       it('should set response status code', () => {
-        expect(ctx.set.status).toEqual(0);
-        ctx.set.status = 301;
-        expect(ctx.set.status).toEqual(301);
+        expect(ctx.res.status).toEqual(0);
+        ctx.res.status = 301;
+        expect(ctx.res.status).toEqual(301);
       });
     });
 
@@ -304,29 +276,17 @@ describe('Context', () => {
           hello: 'world',
         };
         ctx.json(body);
-        expect(await ctx.set.body).toEqual(JSON.stringify(body));
-        expect(ctx.set.headers.get('Content-Type')).toEqual('application/json');
+        expect(await ctx.res.body).toEqual(JSON.stringify(body));
+        expect(ctx.res.headers.get('Content-Type')).toEqual('application/json');
       });
     });
 
     describe('.text()', () => {
       it('should set response body and content-type to text/plain', async () => {
         ctx.text('test');
-        expect(await ctx.set.body).toEqual('test');
-        expect(ctx.set.headers.get('Content-Type')).toEqual('text/plain');
+        expect(await ctx.res.body).toEqual('test');
+        expect(ctx.res.headers.get('Content-Type')).toEqual('text/plain');
       });
     });
-
-    /*
-    describe('.destroy()', () => {
-      it('should destroy response object', () => {
-        ctx.set.status = 200;
-        ctx.set.body = 'test';
-        ctx.set.destroy();
-        expect(ctx.res.statusCode).toEqual(0);
-        expect(ctx.res.body).toBeUndefined();
-      });    
-    });
-    */
   });
 });

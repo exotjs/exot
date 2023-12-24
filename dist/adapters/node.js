@@ -5,7 +5,8 @@ import { HttpHeaders } from '../headers';
 import { HttpRequest } from '../request';
 import { ExotWebSocket } from '../websocket';
 const textDecoder = new TextDecoder();
-export default (init = {}) => new NodeAdapter(init);
+export const adapter = (init = {}) => new NodeAdapter(init);
+export default adapter;
 export class NodeAdapter {
     init;
     server = createServer();
@@ -98,22 +99,22 @@ export class NodeAdapter {
         });
     }
     #sendResponse(ctx, res) {
-        res.statusCode = ctx.set.status || 200;
-        const headers = ctx.set.headers;
+        res.statusCode = ctx.res.status || 200;
+        const headers = ctx.res.headers;
         for (let k in headers.map) {
             const v = headers.map[k];
             if (v !== null) {
                 res.setHeader(k, v);
             }
         }
-        if (ctx.set.body instanceof Readable) {
-            ctx.set.body.pipe(res);
+        if (ctx.res.body instanceof Readable) {
+            ctx.res.body.pipe(res);
         }
-        else if (ctx.set.body instanceof ReadableStream) {
-            Readable.fromWeb(ctx.set.body).pipe(res);
+        else if (ctx.res.body instanceof ReadableStream) {
+            Readable.fromWeb(ctx.res.body).pipe(res);
         }
         else {
-            res.end(ctx.set.body);
+            res.end(ctx.res.body);
         }
     }
 }

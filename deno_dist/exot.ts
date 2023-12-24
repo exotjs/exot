@@ -1,5 +1,5 @@
 import { Readable } from 'node:stream';
-import { type TSchema, Static } from '@sinclair/typebox';
+import { type TSchema, Static } from 'npm:@sinclair/typebox@0.31.23';
 import {
   AnyRecord,
   MergeParams,
@@ -19,19 +19,19 @@ import {
   RouteParams,
   EventHandler,
   HandleOptions,
-} from './types';
-import { NodeAdapter } from './adapters/node';
-import { Context } from './context';
-import { compileSchema, validateSchema } from './validation';
-import { BaseError, NotFoundError } from './errors';
-import { Router, isStaticPath, joinPaths, normalizePath } from './router';
-import { Events } from './events';
-import { awaitMaybePromise, chain, printTraces } from './helpers';
-import { BunAdapter } from './adapters/bun';
-import { FetchAdapter } from './adapters/fetch';
-import { PubSub } from './pubsub';
-import { RUNTIME } from './env';
-import type { HTTPMethod } from 'find-my-way';
+} from './types.ts';
+import { NodeAdapter } from './adapters/node.ts';
+import { Context } from './context.ts';
+import { compileSchema, validateSchema } from './validation.ts';
+import { BaseError, NotFoundError } from './errors.ts';
+import { Router, isStaticPath, joinPaths, normalizePath } from './router.ts';
+import { Events } from './events.ts';
+import { awaitMaybePromise, chain, printTraces } from './helpers.ts';
+import { BunAdapter } from './adapters/bun.ts';
+import { FetchAdapter } from './adapters/fetch.ts';
+import { PubSub } from './pubsub.ts';
+import { RUNTIME } from './env.ts';
+import type { HTTPMethod } from 'npm:find-my-way@7.7.0';
 
 export class Exot<
   Decorators extends AnyRecord = {},

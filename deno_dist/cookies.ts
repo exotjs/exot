@@ -1,5 +1,5 @@
-import { parse as parseCookies, serialize as serializeCookie, type CookieSerializeOptions } from 'cookie';
-import { Context } from './context';
+import { parse as parseCookies, serialize as serializeCookie, type CookieSerializeOptions } from 'npm:cookie@0.6.0';
+import { Context } from './context.ts';
 
 export type CookiesSetOptions = CookieSerializeOptions;
 

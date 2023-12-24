@@ -16,7 +16,7 @@ export class Exot {
         return new Router(init);
     }
     static defaultErrorHandler(err, ctx) {
-        ctx.set.status = err.statusCode || 500;
+        ctx.res.status = err.statusCode || 500;
         ctx.json(err instanceof BaseError ? err : { error: err.message }, false);
     }
     static throwNotFound() {
@@ -30,7 +30,7 @@ export class Exot {
     #adapter;
     #composed = false;
     #handlers = [];
-    #notFoundFn;
+    #notFoundHandler;
     #stack = [];
     #traceHandler;
     errorHandler = Exot.defaultErrorHandler;
@@ -75,13 +75,12 @@ export class Exot {
         }
         return routes;
     }
+    get websocket() {
+        return this.#adapter?.websocket;
+    }
     adapter(adapter) {
         this.#adapter = adapter;
         this.#adapter.mount(this);
-        return this;
-    }
-    notFound(handler) {
-        this.#notFoundFn = this.#createHandlerFn(handler);
         return this;
     }
     trace(handler) {
@@ -96,9 +95,6 @@ export class Exot {
             this.decorators[name] = value;
         }
         return this;
-    }
-    error(errorHandler) {
-        this.errorHandler = errorHandler;
     }
     store(name, value) {
         if (typeof name === 'object') {
@@ -177,9 +173,6 @@ export class Exot {
     get(path, handler, options) {
         return this.add('GET', path, handler, options);
     }
-    options(path, handler, options) {
-        return this.add('OPTIONS', path, handler, options);
-    }
     patch(path, handler, options) {
         return this.add('PATCH', path, handler, options);
     }
@@ -207,8 +200,8 @@ export class Exot {
             }
             return chain([
                 () => {
-                    if (!ctx.terminated && this.#notFoundFn) {
-                        return this.#notFoundFn(ctx);
+                    if (!ctx.terminated && this.#notFoundHandler) {
+                        return this.#notFoundHandler(ctx);
                     }
                 },
                 () => options.emitEvents ? this.events.emit('response', ctx) : void 0,
@@ -227,6 +220,13 @@ export class Exot {
                 () => options.useErrorHandler === false ? void 0 : this.errorHandler(err, ctx),
             ], ctx);
         });
+    }
+    onError(errorHandler) {
+        this.errorHandler = errorHandler;
+    }
+    notFound(handler) {
+        this.#notFoundHandler = this.#createHandlerFn(handler);
+        return this;
     }
     onRequest(handler) {
         this.events.on('request', handler);
@@ -367,8 +367,8 @@ export class Exot {
         return this.#adapter;
     }
     #ensureNotFoundHandler() {
-        if (!this.#notFoundFn) {
-            this.#notFoundFn = Exot.throwNotFound;
+        if (!this.#notFoundHandler) {
+            this.#notFoundHandler = Exot.throwNotFound;
         }
     }
     #ensureRouter(createNew = false) {
@@ -393,7 +393,7 @@ export class Exot {
             ctx.text(body);
         }
         else if (body !== void 0 && body !== null) {
-            ctx.set.body = body;
+            ctx.res.body = body;
         }
     }
     #isExotCompatible(inst) {

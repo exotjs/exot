@@ -14,11 +14,11 @@ const plugin = new Exot({
   .decorate('userRole', null as Role | null)
 
   // required role
-  .scope('role', undefined as Role | undefined)
+  .store('role', undefined as Role | undefined)
 
   // execute this on every handler
-  .onRoute(({ userRole, scope }) => {
-    if (scope.role && userRole !== scope.role) {
+  .onRoute(({ userRole, store }) => {
+    if (store.role && userRole !== store.role) {
       throw new ForbiddenError();
     }
   });
@@ -41,10 +41,9 @@ const ex = new Exot({
     };
   }, {
     // define which role is required for this endpoint
-    scope: {
+    store: {
       role: Role.ADMIN,
     },
-  })
-  .catch(Exot.throwNotFound);
+  });
 
 console.log(`Server listening on ${await ex.listen(3000)}`);

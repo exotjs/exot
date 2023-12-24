@@ -21,8 +21,8 @@ interface WSSocket {
 export interface NodeAdapterInit {
     wss?: WSServer;
 }
-declare const _default: (init?: NodeAdapterInit) => NodeAdapter;
-export default _default;
+export declare const adapter: (init?: NodeAdapterInit) => NodeAdapter;
+export default adapter;
 export declare class NodeAdapter implements Adapter {
     #private;
     readonly init: NodeAdapterInit;

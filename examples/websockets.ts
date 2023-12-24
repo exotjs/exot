@@ -1,6 +1,8 @@
 import { Exot } from '../lib';
 
-const ex = new Exot()
+// Run this example in Bun (it has websockets built-in)
+
+const exot = new Exot()
   // It is possible to have GET and WS method routed to the same path
   .get('/', async () => {
     return 'Hello!';
@@ -9,7 +11,7 @@ const ex = new Exot()
   // Simple WebSocket listener
   .ws('/', {
     message(ws, message) {
-      ws.send(`WS received: ${new TextDecoder().decode(message)}`);
+      ws.send(`WS received: ${message}`);
     },
   })
   
@@ -22,34 +24,20 @@ const ex = new Exot()
       console.log('WS closed');
     },
     message(ws, message) {
-      ws.send(`WS received: ${new TextDecoder().decode(message)}`);
+      ws.send(`WS received: ${message}`);
     },
-    open(ws) {
-      const { authorization } = ws.getUserData();
+    open(_ws, { authorization }) {
       console.log('WS open, user authorization:', authorization);
     },
-    /*
-    upgrade(res, req, context) {
-      const remoteAddress = new TextDecoder().decode(res.getRemoteAddressAsText());
-      const authorization = req.getHeader('authorization');
-      if (!authorization) {
-        console.log('WS unauthorized, remoteAddress:', remoteAddress);
-        res.writeStatus('401');
-        res.endWithoutBody();
-
-      } else {
-        res.upgrade(
-          {
-            authorization,
-          },
-          req.getHeader('sec-websocket-key'),
-          req.getHeader('sec-websocket-protocol'),
-          req.getHeader('sec-websocket-extensions'),
-          context,
-        );
-      }
-    },
-    */
+    beforeUpgrade(req) {
+      return {
+        authorization: req.headers.get('authorization'),
+      };
+    }
   })
 
-console.log(`Server listening on ${await ex.listen(3000)}`);
+export default {
+  port: 3000,
+  fetch: exot.fetch,
+  websocket: exot.websocket,
+}

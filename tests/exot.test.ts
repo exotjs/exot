@@ -118,10 +118,10 @@ describe('Exot', () => {
       });
     });
 
-    describe('.error()', () => {
+    describe('.onError()', () => {
       it('should mount an error handler', async () => {
         const fn = vi.fn(() => {});
-        exot.error(fn);
+        exot.onError(fn);
         exot.use(() => {
           throw new Error('test');
         });

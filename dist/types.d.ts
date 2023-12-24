@@ -112,6 +112,7 @@ export interface Trace {
     traces: Trace[];
 }
 export interface Adapter<WsHandler = any> {
+    websocket?: any;
     close(): Promise<void>;
     fetch(req: Request, ...args: unknown[]): MaybePromise<Response>;
     listen(port: number): Promise<number>;

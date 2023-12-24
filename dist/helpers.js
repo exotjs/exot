@@ -44,8 +44,8 @@ export function printTraces(ctx, warnAboveTime = 200, traces = ctx.traces, level
     if (level === 0) {
         const total = traces.reduce((acc, trace) => acc + trace.time, 0);
         // const contentType = ctx.res.headers['content-type'] || '?';
-        const contentType = ctx.set.headers.get('content-type');
-        console.log(`${ctx.method} ${ctx.path} (${ctx.set.status}, ${contentType}) [${Math.floor(total * 1000) / 1000}]`);
+        const contentType = ctx.res.headers.get('content-type');
+        console.log(`${ctx.method} ${ctx.path} (${ctx.res.status}, ${contentType}) [${Math.floor(total * 1000) / 1000}]`);
     }
     for (let trace of traces) {
         const str = `${'  '.repeat(level + 1)}${trace.name}${trace.desc ? ` (${trace.desc})` : ''} [${trace.time}] ${trace.error ?? ''}`;

@@ -19,15 +19,13 @@ export declare class Exot<Decorators extends AnyRecord = {}, Store extends AnyRe
     constructor(init?: ExotInit<HandlerOptions>);
     get fetch(): (req: Request, ...args: unknown[]) => MaybePromise<Response>;
     get routes(): any[];
+    get websocket(): any;
     adapter<UseAdapter extends Adapter>(adapter: UseAdapter): UseAdapter extends Adapter ? Exot<Decorators, Store, LocalContext> : this;
-    notFound<NewExot extends Exot<any, any> = this>(handler: NewExot): NewExot extends Exot<infer UseDecorators> ? Exot<Decorators & UseDecorators> : this;
-    notFound(handler: StackHandler<LocalContext>): this;
     trace(handler: TraceHandler<LocalContext>): this;
     decorate<const Name extends string, const Value>(name: Name, value: Value): Exot<Decorators & {
         [name in Name]: Value;
     }, Store>;
     decorate<const Object extends AnyRecord>(object: Object): Exot<Decorators & Object, Store>;
-    error(errorHandler: ErrorHandler<LocalContext>): void;
     store<const Name extends string, const Value>(name: Name, value: Value): Exot<Decorators, Store & {
         [name in Name]: Value;
     }>;
@@ -41,12 +39,14 @@ export declare class Exot<Decorators extends AnyRecord = {}, Store extends AnyRe
     all<const Path extends string, const LocalParams extends TSchema, const Body extends TSchema, const Query extends TSchema, const Response extends TSchema, const NewContext extends ContextInterface = ContextInterface<Params & MergeParams<Path, LocalParams>, Static<Body>, AnyRecord & Static<Query>, Static<Response>, Store> & Decorators>(path: Path, handler: StackHandler<NewContext>, options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions): this;
     delete<const Path extends string, const LocalParams extends TSchema, const Body extends TSchema, const Query extends TSchema, const Response extends TSchema, const NewContext extends ContextInterface = ContextInterface<Params & MergeParams<Path, LocalParams>, Static<Body>, AnyRecord & Static<Query>, Static<Response>, Store> & Decorators>(path: Path, handler: StackHandler<NewContext>, options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions): this;
     get<const Path extends string, const LocalParams extends TSchema, const Body extends TSchema, const Query extends TSchema, const Response extends TSchema, const NewContext extends ContextInterface = ContextInterface<Params & MergeParams<Path, LocalParams>, Static<Body>, AnyRecord & Static<Query>, Static<Response>, Store> & Decorators>(path: Path, handler: StackHandler<NewContext>, options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions): this;
-    options<const Path extends string, const LocalParams extends TSchema, const Body extends TSchema, const Query extends TSchema, const Response extends TSchema, const NewContext extends ContextInterface = ContextInterface<Params & MergeParams<Path, LocalParams>, Static<Body>, AnyRecord & Static<Query>, Static<Response>, Store> & Decorators>(path: Path, handler: StackHandler<NewContext>, options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions): this;
     patch<const Path extends string, const LocalParams extends TSchema, const Body extends TSchema, const Query extends TSchema, const Response extends TSchema, const NewContext extends ContextInterface = ContextInterface<Params & MergeParams<Path, LocalParams>, Static<Body>, AnyRecord & Static<Query>, Static<Response>, Store> & Decorators>(path: Path, handler: StackHandler<NewContext>, options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions): this;
     post<const Path extends string, const LocalParams extends TSchema, const Body extends TSchema, const Query extends TSchema, const Response extends TSchema, const NewContext extends ContextInterface = ContextInterface<Params & MergeParams<Path, LocalParams>, Static<Body>, AnyRecord & Static<Query>, Static<Response>, Store> & Decorators>(path: Path, handler: StackHandler<NewContext>, options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions): this;
     put<const Path extends string, const LocalParams extends TSchema, const Body extends TSchema, const Query extends TSchema, const Response extends TSchema, const NewContext extends ContextInterface = ContextInterface<Params & MergeParams<Path, LocalParams>, Static<Body>, AnyRecord & Static<Query>, Static<Response>, Store> & Decorators>(path: Path, handler: StackHandler<NewContext>, options?: StackHandlerOptions<LocalParams, Body, Query, Response, Store> & HandlerOptions): this;
     ws<UserData = any>(path: string, handler: WebSocketHandler<UserData>): this;
     handle(ctx: LocalContext, options?: HandleOptions): MaybePromise<unknown>;
+    onError(errorHandler: ErrorHandler<LocalContext>): void;
+    notFound<NewExot extends Exot<any, any> = this>(handler: NewExot): NewExot extends Exot<infer UseDecorators> ? Exot<Decorators & UseDecorators> : this;
+    notFound(handler: StackHandler<LocalContext>): this;
     onRequest(handler: EventHandler<LocalContext>): this;
     onResponse(handler: EventHandler<LocalContext>): this;
     onRoute(handler: EventHandler<LocalContext>): this;

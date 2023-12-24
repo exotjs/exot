@@ -1,16 +1,16 @@
 import type { Readable } from 'node:stream';
-import type { TSchema, Static } from '@sinclair/typebox';
-import type { Context } from './context';
-import type { Exot } from './exot';
-import type { ExotWebSocket } from './websocket';
-import type { Router } from './router';
-import type { Config, HTTPMethod, HTTPVersion } from 'find-my-way';
-import type { HttpRequest } from './request';
-import type { PubSub } from './pubsub';
+import type { TSchema, Static } from 'npm:@sinclair/typebox@0.31.23';
+import type { Context } from './context.ts';
+import type { Exot } from './exot.ts';
+import type { ExotWebSocket } from './websocket.ts';
+import type { Router } from './router.ts';
+import type { Config, HTTPMethod, HTTPVersion } from 'npm:find-my-way@7.7.0';
+import type { HttpRequest } from './request.ts';
+import type { PubSub } from './pubsub.ts';
 
 const EVENTS = ['error', 'publish', 'request', 'response', 'route', 'start'] as const;
 
-export type { HTTPMethod } from 'find-my-way';
+export type { HTTPMethod } from 'npm:find-my-way@7.7.0';
 
 export type Runtime =
   | 'bun'

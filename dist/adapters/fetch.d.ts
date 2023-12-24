@@ -1,7 +1,7 @@
 import { Exot } from '../exot';
 import { Adapter, MaybePromise } from '../types';
-declare const _default: () => FetchAdapter;
-export default _default;
+export declare const adapter: () => FetchAdapter;
+export default adapter;
 export declare class FetchAdapter implements Adapter {
     exot: Exot;
     close(): Promise<void>;

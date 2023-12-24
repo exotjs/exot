@@ -19,7 +19,7 @@ export class Cookies {
         return this.parsed;
     };
     set = (name, value, options) => {
-        this.ctx.set.headers.append('Set-Cookie', this.serialize(name, value, options));
+        this.ctx.res.headers.append('Set-Cookie', this.serialize(name, value, options));
     };
     delete = (name, options) => {
         this.set(name, '', {

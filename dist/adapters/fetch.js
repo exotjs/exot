@@ -1,5 +1,6 @@
 import { awaitMaybePromise } from '../helpers';
-export default () => new FetchAdapter();
+export const adapter = () => new FetchAdapter();
+export default adapter;
 export class FetchAdapter {
     exot;
     async close() {
@@ -9,13 +10,13 @@ export class FetchAdapter {
         const ctx = this.exot.context(req);
         return awaitMaybePromise(() => this.exot.handle(ctx), () => {
             let response;
-            if (ctx.set.body instanceof Response) {
-                response = ctx.set.body;
+            if (ctx.res.body instanceof Response) {
+                response = ctx.res.body;
             }
             else {
-                response = new Response(ctx.set.body, {
-                    headers: ctx.set.headers,
-                    status: ctx.set.status || void 0,
+                response = new Response(ctx.res.body, {
+                    headers: ctx.res.headers,
+                    status: ctx.res.status || void 0,
                 });
             }
             ctx.destroy();

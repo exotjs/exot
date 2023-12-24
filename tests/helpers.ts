@@ -1,12 +1,4 @@
 import { Readable } from "node:stream";
-import { HttpRequest, HttpResponse } from "uWebSockets.js";
-
-const encoder = new TextEncoder();
-
-interface IMockResponseInit {
-  body?: Buffer;
-  remoteAddress?: string;
-}
 
 export function createStream(data: any = '') {
   return new Readable({

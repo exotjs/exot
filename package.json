@@ -1,6 +1,6 @@
 {
   "name": "@exotjs/exot",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "description": "A cross-runtime TypeScript framework for server applications.",
   "author": "Daniel Regeci",
   "license": "MIT",
@@ -20,6 +20,7 @@
   "type": "module",
   "scripts": {
     "build": "rimraf dist && tsc -p tsconfig.build.json",
+    "denoify": "rimraf deno_dist && denoify && rimraf 'deno_dist/**/*.test.{ts,tsx}' && find deno_dist/. -type f -exec sed -i '' -e 's/node:node:/node:/g' {} +",
     "test": "vitest"
   },
   "files": [
@@ -45,6 +46,10 @@
     "./helpers": {
       "types": "./dist/helpers.d.ts",
       "import": "./dist/helpers.js"
+    },
+    "./pubsub": {
+      "types": "./dist/pubsub.d.ts",
+      "import": "./dist/pubsub.js"
     },
     "./request": {
       "types": "./dist/request.d.ts",
@@ -72,6 +77,9 @@
       "helpers": [
         "./dist/helpers"
       ],
+      "pubsub": [
+        "./dist/pubsub"
+      ],
       "request": [
         "./dist/request"
       ],
@@ -91,6 +99,7 @@
   "devDependencies": {
     "@types/cookie": "^0.5.4",
     "@types/node": "^20.9.0",
+    "denoify": "^1.6.6",
     "rimraf": "^5.0.5",
     "tinybench": "^2.5.1",
     "ts-node": "^10.9.1",

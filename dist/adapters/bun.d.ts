@@ -29,8 +29,8 @@ export interface BunWebsockets {
         decompress?: boolean | string;
     };
 }
-declare const _default: () => BunAdapter;
-export default _default;
+export declare const adapter: () => BunAdapter;
+export default adapter;
 export declare class BunAdapter extends FetchAdapter {
     #private;
     get websocket(): BunWebsockets;

@@ -1,7 +1,8 @@
 import { FetchAdapter } from './fetch';
 import { awaitMaybePromise, parseUrl } from '../helpers';
 import { ExotWebSocket } from '../websocket';
-export default () => new BunAdapter();
+export const adapter = () => new BunAdapter();
+export default adapter;
 export class BunAdapter extends FetchAdapter {
     #wsHandlers = {};
     get websocket() {

@@ -21,7 +21,7 @@ export class Context {
     #query;
     #querystring;
     #currentTrace;
-    #set = {
+    #res = {
         body: void 0,
         headers: RUNTIME === 'bun' ? new Headers() : new HttpHeaders(),
         status: 0,
@@ -82,16 +82,16 @@ export class Context {
         }
         return value;
     }
-    get set() {
-        return this.#set;
+    get res() {
+        return this.#res;
     }
     get arrayBuffer() {
         return (value) => {
             if (value !== void 0) {
-                if (!this.set.headers.has('content-type')) {
-                    this.set.headers.set('content-type', 'application/octet-stream');
+                if (!this.res.headers.has('content-type')) {
+                    this.res.headers.set('content-type', 'application/octet-stream');
                 }
-                this.set.body = value;
+                this.res.body = value;
             }
             else {
                 return this.req.arrayBuffer();
@@ -107,10 +107,10 @@ export class Context {
     get json() {
         return (value, validate) => {
             if (value !== void 0) {
-                if (!this.set.headers.has('content-type')) {
-                    this.set.headers.set('content-type', 'application/json');
+                if (!this.res.headers.has('content-type')) {
+                    this.res.headers.set('content-type', 'application/json');
                 }
-                this.set.body = JSON.stringify(validate === false ? value : this.#validateResponse(value));
+                this.res.body = JSON.stringify(validate === false ? value : this.#validateResponse(value));
             }
             else {
                 return this.req.json().then((body) => this.#validateBody(body));
@@ -120,7 +120,7 @@ export class Context {
     get stream() {
         return (value) => {
             if (value) {
-                this.set.body = value;
+                this.res.body = value;
             }
             else {
                 const stream = this.req.body;
@@ -135,10 +135,10 @@ export class Context {
     get text() {
         return (value, validate) => {
             if (value !== void 0) {
-                if (!this.set.headers.has('content-type')) {
-                    this.set.headers.set('content-type', 'text/plain');
+                if (!this.res.headers.has('content-type')) {
+                    this.res.headers.set('content-type', 'text/plain');
                 }
-                this.set.body = (validate === false ? value : this.#validateResponse(value));
+                this.res.body = (validate === false ? value : this.#validateResponse(value));
             }
             else {
                 return this.req.text().then((body) => this.#validateBody(body));

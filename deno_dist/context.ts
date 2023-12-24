@@ -1,15 +1,15 @@
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
-import { TSchema } from '@sinclair/typebox';
-import { validateSchema } from './validation';
-import { Cookies } from './cookies';
-import { RUNTIME } from './env';
-import { HttpHeaders } from './headers';
-import { parseUrl, parseQueryString, awaitMaybePromise } from './helpers';
-import type { ValidateFunction } from 'ajv';
-import type { AnyRecord, ContextInit, HTTPMethod, MaybePromise, Trace } from './types';
-import { HttpRequest } from './request';
-import { PubSub } from './pubsub';
+import { TSchema } from 'npm:@sinclair/typebox@0.31.23';
+import { validateSchema } from './validation.ts';
+import { Cookies } from './cookies.ts';
+import { RUNTIME } from './env.ts';
+import { HttpHeaders } from './headers.ts';
+import { parseUrl, parseQueryString, awaitMaybePromise } from './helpers.ts';
+import type { ValidateFunction } from 'npm:ajv@8.12.0';
+import type { AnyRecord, ContextInit, HTTPMethod, MaybePromise, Trace } from './types.ts';
+import { HttpRequest } from './request.ts';
+import { PubSub } from './pubsub.ts';
 
 export class Context<
   Params = AnyRecord,

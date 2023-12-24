@@ -1,16 +1,17 @@
+import { Buffer } from "node:buffer";
 import internal from 'node:stream';
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
-import { Exot } from '../exot';
+import { Exot } from '../exot.ts';
 import {
   Adapter,
   WebSocketHandler,
-} from '../types';
-import { Readable } from 'stream';
-import { Context } from '../context';
-import { awaitMaybePromise, parseFormData, parseUrl } from '../helpers';
-import { HttpHeaders } from '../headers';
-import { HttpRequest } from '../request';
-import { ExotWebSocket } from '../websocket';
+} from '../types.ts';
+import { Readable } from 'node:stream';
+import { Context } from '../context.ts';
+import { awaitMaybePromise, parseFormData, parseUrl } from '../helpers.ts';
+import { HttpHeaders } from '../headers.ts';
+import { HttpRequest } from '../request.ts';
+import { ExotWebSocket } from '../websocket.ts';
 
 const textDecoder = new TextDecoder();
 
