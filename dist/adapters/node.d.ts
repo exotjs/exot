@@ -1,16 +1,16 @@
 /// <reference types="node" />
 /// <reference types="node" />
 /// <reference types="node" />
-import internal from 'node:stream';
+import { type Duplex } from 'node:stream';
 import { IncomingMessage, ServerResponse } from 'node:http';
-import { Exot } from '../exot';
-import { Adapter, WebSocketHandler } from '../types';
-import { HttpHeaders } from '../headers';
-import { HttpRequest } from '../request';
-import { ExotWebSocket } from '../websocket';
+import { Exot } from '../exot.js';
+import { Adapter, WebSocketHandler } from '../types.js';
+import { HttpHeaders } from '../headers.js';
+import { HttpRequest } from '../request.js';
+import { ExotWebSocket } from '../websocket.js';
 interface WSServer {
     emit: (event: string, ws: any, req: IncomingMessage) => void;
-    handleUpgrade: (req: IncomingMessage, socket: internal.Duplex, head: Buffer, cb: (ws: any) => void) => void;
+    handleUpgrade: (req: IncomingMessage, socket: Duplex, head: Buffer, cb: (ws: any) => void) => void;
     on: (event: string, cb: (ws: any, req: IncomingMessage) => void) => void;
 }
 interface WSSocket {
@@ -30,7 +30,7 @@ export declare class NodeAdapter implements Adapter {
     constructor(init?: NodeAdapterInit);
     close(): Promise<void>;
     listen(port: number): Promise<number>;
-    mount(exot: Exot): Exot<{}, {}, {}, {}, import("../types").ContextInterface<{}, any, any, any, {}>>;
+    mount(exot: Exot): Exot<{}, {}, {}, {}, import("../types.js").ContextInterface<{}, any, any, any, {}>>;
     fetch(req: Request): Promise<Response>;
     ws(path: string, handler: WebSocketHandler<any>): void;
 }

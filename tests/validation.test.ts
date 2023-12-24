@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { TSchema, t } from '../lib';
+import { TSchema, t } from '../lib.js';
 import {
   ValidateFunction,
   compileSchema,
   validateSchema,
-} from '../lib/validation';
-import { ValidationError } from '../lib/errors';
+} from '../lib/validation.js';
+import { ValidationError } from '../lib/errors.js';
 
 describe('Validation', () => {
   let schema: TSchema;

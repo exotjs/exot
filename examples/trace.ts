@@ -1,5 +1,5 @@
-import { Exot, t } from '../lib';
-import { printTraces } from '../lib/helpers';
+import { Exot, t } from '../lib.js';
+import { printTraces } from '../lib/helpers.js';
 
 async function slowFunc(name: string) {
   return new Promise((resolve) => {

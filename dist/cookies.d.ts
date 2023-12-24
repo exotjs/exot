@@ -1,5 +1,5 @@
 import { type CookieSerializeOptions } from 'cookie';
-import { Context } from './context';
+import { Context } from './context.js';
 export type CookiesSetOptions = CookieSerializeOptions;
 export declare class Cookies {
     readonly ctx: Context;

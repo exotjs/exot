@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { Readable } from 'node:stream';
-import { Exot } from '../lib';
+import { Exot } from '../lib.js';
 
 const ex = new Exot()
   // Return this file using streams

@@ -1,4 +1,4 @@
-import { Exot } from '../lib';
+import { Exot } from '../lib.js';
 
 const exot = new Exot()
   .get('/', () => {

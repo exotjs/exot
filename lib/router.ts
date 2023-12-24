@@ -1,6 +1,6 @@
 import router, { HTTPMethod, HTTPVersion, Instance as RouterInstance } from 'find-my-way';
-import type { RouterInit, RouterFindResult, ContextInterface } from './types';
-import type { ChainFn } from './types';
+import type { RouterInit, RouterFindResult, ContextInterface } from './types.js';
+import type { ChainFn } from './types.js';
 
 export function isStaticPath(path: string) {
   return !/[:\*\(]/.test(path);

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Events } from '../lib/events';
-import { Context } from '../lib/context';
+import { Events } from '../lib/events.js';
+import { Context } from '../lib/context.js';
 
 describe('Events', () => {
   let ctx: Context;

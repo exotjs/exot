@@ -1,22 +1,21 @@
-import internal from 'node:stream';
+import { Readable, type Duplex } from 'node:stream';
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
-import { Exot } from '../exot';
+import { Exot } from '../exot.js';
 import {
   Adapter,
   WebSocketHandler,
-} from '../types';
-import { Readable } from 'stream';
-import { Context } from '../context';
-import { awaitMaybePromise, parseFormData, parseUrl } from '../helpers';
-import { HttpHeaders } from '../headers';
-import { HttpRequest } from '../request';
-import { ExotWebSocket } from '../websocket';
+} from '../types.js';
+import { Context } from '../context.js';
+import { awaitMaybePromise, parseFormData, parseUrl } from '../helpers.js';
+import { HttpHeaders } from '../headers.js';
+import { HttpRequest } from '../request.js';
+import { ExotWebSocket } from '../websocket.js';
 
 const textDecoder = new TextDecoder();
 
 interface WSServer {
   emit: (event: string, ws: any, req: IncomingMessage) => void;
-  handleUpgrade: (req: IncomingMessage, socket: internal.Duplex, head: Buffer, cb: (ws: any) => void) => void;
+  handleUpgrade: (req: IncomingMessage, socket: Duplex, head: Buffer, cb: (ws: any) => void) => void;
   on: (event: string, cb: (ws: any, req: IncomingMessage) => void) => void;
 }
 

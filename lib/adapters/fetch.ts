@@ -1,6 +1,6 @@
-import { Exot } from '../exot';
-import { Adapter, MaybePromise } from '../types';
-import { awaitMaybePromise } from '../helpers';
+import { Exot } from '../exot.js';
+import { Adapter, MaybePromise } from '../types.js';
+import { awaitMaybePromise } from '../helpers.js';
 
 export const adapter = () => new FetchAdapter();
 

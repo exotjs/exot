@@ -1,6 +1,6 @@
-import { FetchAdapter } from './fetch';
-import { awaitMaybePromise, parseUrl } from '../helpers';
-import { ExotWebSocket } from '../websocket';
+import { FetchAdapter } from './fetch.js';
+import { awaitMaybePromise, parseUrl } from '../helpers.js';
+import { ExotWebSocket } from '../websocket.js';
 export const adapter = () => new BunAdapter();
 export default adapter;
 export class BunAdapter extends FetchAdapter {

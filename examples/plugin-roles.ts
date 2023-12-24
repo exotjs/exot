@@ -1,5 +1,5 @@
-import { Exot } from '../lib';
-import { ForbiddenError } from '../lib/errors';
+import { Exot } from '../lib.js';
+import { ForbiddenError } from '../lib/errors.js';
 
 enum Role {
   ADMIN = 'ADMIN',

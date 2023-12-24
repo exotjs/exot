@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BaseError, ForbiddenError, NotFoundError, ValidationError } from '../lib/errors';
+import { BaseError, ForbiddenError, NotFoundError, ValidationError } from '../lib/errors.js';
 
 describe('Errors', () => {
   describe('BaseError', () => {

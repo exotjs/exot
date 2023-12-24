@@ -1,5 +1,5 @@
 import { writeFile } from 'node:fs/promises';
-import { Exot } from '../lib';
+import { Exot } from '../lib.js';
 
 const ex = new Exot()
   .post('/', async ({ stream }) => {

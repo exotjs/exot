@@ -1,6 +1,6 @@
 import Ajv from 'ajv';
 import addFormats from 'ajv-formats';
-import { ValidationError } from './errors';
+import { ValidationError } from './errors.js';
 let ajv = new Ajv({
     coerceTypes: 'array',
     useDefaults: true,

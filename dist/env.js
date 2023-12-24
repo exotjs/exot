@@ -1,5 +1,5 @@
-import { compileSchema, validateSchema } from './validation';
-import { ValidationError } from './errors';
+import { compileSchema, validateSchema } from './validation.js';
+import { ValidationError } from './errors.js';
 export const RUNTIME = detectRuntime();
 export let env = process.env;
 export function detectRuntime() {

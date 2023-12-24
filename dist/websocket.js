@@ -1,4 +1,4 @@
-import { PubSubSubscriber } from './pubsub';
+import { PubSubSubscriber } from './pubsub.js';
 export class ExotWebSocket {
     exot;
     raw;

@@ -1,9 +1,9 @@
+import { Readable } from 'node:stream';
 import { createServer } from 'node:http';
-import { Readable } from 'stream';
-import { awaitMaybePromise, parseFormData, parseUrl } from '../helpers';
-import { HttpHeaders } from '../headers';
-import { HttpRequest } from '../request';
-import { ExotWebSocket } from '../websocket';
+import { awaitMaybePromise, parseFormData, parseUrl } from '../helpers.js';
+import { HttpHeaders } from '../headers.js';
+import { HttpRequest } from '../request.js';
+import { ExotWebSocket } from '../websocket.js';
 const textDecoder = new TextDecoder();
 export const adapter = (init = {}) => new NodeAdapter(init);
 export default adapter;

@@ -1,8 +1,8 @@
 import { Readable } from 'node:stream';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { Exot } from '../lib/exot';
-import { Context } from '../lib/context';
-import { ContextInterface } from '../lib/types';
+import { Exot } from '../lib/exot.js';
+import { Context } from '../lib/context.js';
+import { ContextInterface } from '../lib/types.js';
 
 describe('Exot', () => {
   describe('constructor', () => {

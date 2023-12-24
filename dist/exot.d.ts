@@ -1,8 +1,8 @@
 import { type TSchema, Static } from '@sinclair/typebox';
-import { AnyRecord, MergeParams, ErrorHandler, RouterInit, ExotInit, Adapter, StackHandler, StackHandlerOptions, TraceHandler, MaybePromise, ContextInterface, WebSocketHandler, RouteParams, EventHandler, HandleOptions } from './types';
-import { Router } from './router';
-import { Events } from './events';
-import { PubSub } from './pubsub';
+import { AnyRecord, MergeParams, ErrorHandler, RouterInit, ExotInit, Adapter, StackHandler, StackHandlerOptions, TraceHandler, MaybePromise, ContextInterface, WebSocketHandler, RouteParams, EventHandler, HandleOptions } from './types.js';
+import { Router } from './router.js';
+import { Events } from './events.js';
+import { PubSub } from './pubsub.js';
 import type { HTTPMethod } from 'find-my-way';
 export declare class Exot<Decorators extends AnyRecord = {}, Store extends AnyRecord = {}, HandlerOptions extends AnyRecord = {}, Params extends AnyRecord = {}, LocalContext extends ContextInterface = ContextInterface<Params, any, any, any, Store> & Decorators> {
     #private;

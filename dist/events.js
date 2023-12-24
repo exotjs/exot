@@ -1,4 +1,4 @@
-import { chainAll } from './helpers';
+import { chainAll } from './helpers.js';
 export class Events {
     name;
     _listeners = {

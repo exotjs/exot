@@ -1,4 +1,4 @@
-import type { PubSubHandler } from './types';
+import type { PubSubHandler } from './types.js';
 export declare class PubSub {
     #private;
     createSubscriber(handler?: PubSubHandler): PubSubSubscriber;

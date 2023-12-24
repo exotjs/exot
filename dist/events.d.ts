@@ -1,4 +1,4 @@
-import { ContextInterface, ExotEvent, EventHandler, MaybePromise } from './types';
+import { ContextInterface, ExotEvent, EventHandler, MaybePromise } from './types.js';
 export declare class Events<LocalContext extends ContextInterface> {
     #private;
     readonly name?: string | undefined;

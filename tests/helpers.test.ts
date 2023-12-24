@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { awaitMaybePromise, chain, chainAll} from '../lib/helpers';
+import { awaitMaybePromise, chain, chainAll} from '../lib/helpers.js';
 
 describe('Helpers', () => {
   describe('awaitMaybePromise', () => {

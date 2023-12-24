@@ -1,4 +1,4 @@
-import type { ChainFn, ContextInterface, MaybePromise, Trace } from './types';
+import type { ChainFn, ContextInterface, MaybePromise, Trace } from './types.js';
 export declare function awaitMaybePromise<T>(fn: ChainFn<T>, onResolved: (result: any) => MaybePromise<T>, onError: (err: any) => MaybePromise<T>, input?: T): MaybePromise<T>;
 export declare function chain<T>(fns: ChainFn<T>[], input?: T, i?: number, terminateOnReturn?: boolean): MaybePromise<unknown>;
 export declare const chainAll: <T>(fns: ChainFn<T>[], input: T) => unknown;

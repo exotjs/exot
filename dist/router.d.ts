@@ -1,6 +1,6 @@
 import { HTTPMethod, HTTPVersion, Instance as RouterInstance } from 'find-my-way';
-import type { RouterInit, RouterFindResult } from './types';
-import type { ChainFn } from './types';
+import type { RouterInit, RouterFindResult } from './types.js';
+import type { ChainFn } from './types.js';
 export declare function isStaticPath(path: string): boolean;
 export declare function normalizePath(path: string, ignoreTrailingSlash?: boolean): string;
 export declare function joinPaths(...parts: string[]): string;

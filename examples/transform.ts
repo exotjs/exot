@@ -1,4 +1,4 @@
-import { Exot, t} from '../lib';
+import { Exot, t} from '../lib.js';
 
 
 const ex = new Exot()

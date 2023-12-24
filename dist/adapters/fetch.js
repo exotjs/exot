@@ -1,4 +1,4 @@
-import { awaitMaybePromise } from '../helpers';
+import { awaitMaybePromise } from '../helpers.js';
 export const adapter = () => new FetchAdapter();
 export default adapter;
 export class FetchAdapter {

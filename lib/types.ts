@@ -1,12 +1,12 @@
 import type { Readable } from 'node:stream';
 import type { TSchema, Static } from '@sinclair/typebox';
-import type { Context } from './context';
-import type { Exot } from './exot';
-import type { ExotWebSocket } from './websocket';
-import type { Router } from './router';
+import type { Context } from './context.js';
+import type { Exot } from './exot.js';
+import type { ExotWebSocket } from './websocket.js';
+import type { Router } from './router.js';
 import type { Config, HTTPMethod, HTTPVersion } from 'find-my-way';
-import type { HttpRequest } from './request';
-import type { PubSub } from './pubsub';
+import type { HttpRequest } from './request.js';
+import type { PubSub } from './pubsub.js';
 
 const EVENTS = ['error', 'publish', 'request', 'response', 'route', 'start'] as const;
 

@@ -1,5 +1,5 @@
 import qs from 'fast-querystring';
-import type { ChainFn, ContextInterface, MaybePromise, Trace } from './types';
+import type { ChainFn, ContextInterface, MaybePromise, Trace } from './types.js';
 
 export function awaitMaybePromise<T>(
   fn: ChainFn<T>,

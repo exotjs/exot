@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { HttpHeaders } from '../lib/headers';
+import { HttpHeaders } from '../lib/headers.js';
 
 describe('HttpHeaders', () => {
   describe('constructor', () => {

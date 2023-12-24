@@ -1,4 +1,4 @@
-import type { PubSubHandler } from './types';
+import type { PubSubHandler } from './types.js';
 
 export class PubSub {
   #topics: Record<string, Set<PubSubSubscriber>> = {};

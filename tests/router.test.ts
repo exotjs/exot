@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Router, isStaticPath, normalizePath } from '../lib/router';
+import { Router, isStaticPath, normalizePath } from '../lib/router.js';
 
 describe('Router', () => {
   let router: Router;

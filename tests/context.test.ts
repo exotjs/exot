@@ -1,9 +1,9 @@
 import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { Context } from '../lib/context';
-import { Cookies } from '../lib/cookies';
-import { createStream, serializeFormData, streamToBuffer } from './helpers';
-import { parseFormData } from '../lib/helpers';
+import { Context } from '../lib/context.js';
+import { Cookies } from '../lib/cookies.js';
+import { createStream, serializeFormData, streamToBuffer } from './helpers.js';
+import { parseFormData } from '../lib/helpers.js';
 
 describe('Context', () => {
   let body: string;

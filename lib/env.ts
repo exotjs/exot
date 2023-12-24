@@ -1,7 +1,7 @@
 import { Static, TSchema } from '@sinclair/typebox';
-import { Runtime } from './types';
-import { compileSchema, validateSchema } from './validation';
-import { ValidationError } from './errors';
+import { Runtime } from './types.js';
+import { compileSchema, validateSchema } from './validation.js';
+import { ValidationError } from './errors.js';
 
 export const RUNTIME: Runtime = detectRuntime();
 

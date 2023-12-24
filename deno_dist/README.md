@@ -1,27 +1,21 @@
 # Exot
 
-__Work in progress__
+__Status: currently in Alpha__
 
-Exot is a cross-platform TypeScript framework for building modern, high-performance server applications.
+Exot is a cross-runtime TypeScript framework for building modern, high-performance server applications.
 
-Supported platforms:
+## Documentation
+
+Visit [exot.dev](https://exot.dev) for documentation.
+
+## Supported runtimes
 
 - Node.js
 - Bun
+- Deno
 - WinterCG compliant systems
 
-Platform support under way:
-
-- Deno
-- AWS Lambda
-
-Supported adapters:
-
-- Fetch (WinterCG)
-- uWebSockets.js
-- Node.js built-in http server
-
-Example:
+## Usage
 
 ```js
 import { Exot } from '@exotjs/exot';

@@ -1,5 +1,5 @@
-import { chainAll } from './helpers';
-import { ChainFn, ContextInterface, ExotEvent, EventHandler, MaybePromise } from './types';
+import { chainAll } from './helpers.js';
+import { ChainFn, ContextInterface, ExotEvent, EventHandler, MaybePromise } from './types.js';
 
 export class Events<
   LocalContext extends ContextInterface

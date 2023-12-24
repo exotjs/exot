@@ -1,6 +1,6 @@
 import Ajv, { Options, ValidateFunction } from 'ajv';
 import addFormats from 'ajv-formats';
-import { ValidationError } from './errors';
+import { ValidationError } from './errors.js';
 import type { TSchema, Static } from '@sinclair/typebox';
 export type { ValidateFunction } from 'ajv';
 

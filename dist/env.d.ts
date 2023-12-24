@@ -1,6 +1,6 @@
 /// <reference types="node" />
 import { Static, TSchema } from '@sinclair/typebox';
-import { Runtime } from './types';
+import { Runtime } from './types.js';
 export declare const RUNTIME: Runtime;
 export declare let env: NodeJS.ProcessEnv;
 export declare function detectRuntime(): Runtime;

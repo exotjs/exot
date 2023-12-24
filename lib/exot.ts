@@ -19,18 +19,18 @@ import {
   RouteParams,
   EventHandler,
   HandleOptions,
-} from './types';
-import { NodeAdapter } from './adapters/node';
-import { Context } from './context';
-import { compileSchema, validateSchema } from './validation';
-import { BaseError, NotFoundError } from './errors';
-import { Router, isStaticPath, joinPaths, normalizePath } from './router';
-import { Events } from './events';
-import { awaitMaybePromise, chain, printTraces } from './helpers';
-import { BunAdapter } from './adapters/bun';
-import { FetchAdapter } from './adapters/fetch';
-import { PubSub } from './pubsub';
-import { RUNTIME } from './env';
+} from './types.js';
+import { NodeAdapter } from './adapters/node.js';
+import { Context } from './context.js';
+import { compileSchema, validateSchema } from './validation.js';
+import { BaseError, NotFoundError } from './errors.js';
+import { Router, isStaticPath, joinPaths, normalizePath } from './router.js';
+import { Events } from './events.js';
+import { awaitMaybePromise, chain, printTraces } from './helpers.js';
+import { BunAdapter } from './adapters/bun.js';
+import { FetchAdapter } from './adapters/fetch.js';
+import { PubSub } from './pubsub.js';
+import { RUNTIME } from './env.js';
 import type { HTTPMethod } from 'find-my-way';
 
 export class Exot<

@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { validateSchema } from './validation';
-import { Cookies } from './cookies';
-import { RUNTIME } from './env';
-import { HttpHeaders } from './headers';
-import { parseUrl, parseQueryString, awaitMaybePromise } from './helpers';
+import { validateSchema } from './validation.js';
+import { Cookies } from './cookies.js';
+import { RUNTIME } from './env.js';
+import { HttpHeaders } from './headers.js';
+import { parseUrl, parseQueryString, awaitMaybePromise } from './helpers.js';
 export class Context {
     bodySchema;
     params;

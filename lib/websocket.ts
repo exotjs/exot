@@ -1,5 +1,5 @@
-import { Exot } from './exot';
-import { PubSubSubscriber } from './pubsub';
+import { Exot } from './exot.js';
+import { PubSubSubscriber } from './pubsub.js';
 
 export interface WebSocketInterface {
   close: () => void;

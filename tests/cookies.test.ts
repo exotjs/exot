@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import { beforeEach, describe, expect, it } from 'vitest'
-import { Cookies } from '../lib/cookies';
-import { Context } from '../lib/context';
+import { Cookies } from '../lib/cookies.js';
+import { Context } from '../lib/context.js';
 
 describe('Cookies', () => {
   let cookies: Cookies;

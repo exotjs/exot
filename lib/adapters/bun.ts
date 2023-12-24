@@ -1,7 +1,7 @@
-import { FetchAdapter } from './fetch';
-import { awaitMaybePromise, parseUrl } from '../helpers';
-import { ExotWebSocket } from '../websocket';
-import type { MaybePromise, WebSocketHandler } from '../types';
+import { FetchAdapter } from './fetch.js';
+import { awaitMaybePromise, parseUrl } from '../helpers.js';
+import { ExotWebSocket } from '../websocket.js';
+import type { MaybePromise, WebSocketHandler } from '../types.js';
 
 interface BunWebsocketData<UserData> {
   handler: WebSocketHandler<UserData>;
