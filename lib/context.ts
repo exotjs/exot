@@ -4,11 +4,11 @@ import { TSchema } from '@sinclair/typebox';
 import { validateSchema } from './validation.js';
 import { Cookies } from './cookies.js';
 import { RUNTIME } from './env.js';
-import { HttpHeaders } from './headers.js';
+import { ExotHeaders } from './headers.js';
 import { parseUrl, parseQueryString, awaitMaybePromise } from './helpers.js';
 import type { ValidateFunction } from 'ajv';
 import type { AnyRecord, ContextInit, HTTPMethod, MaybePromise, Trace } from './types.js';
-import { HttpRequest } from './request.js';
+import { ExotRequest } from './request.js';
 import { PubSub } from './pubsub.js';
 
 export class Context<
@@ -24,7 +24,7 @@ export class Context<
 
   public pubsub!: PubSub;
 
-  readonly req: Request & HttpRequest;
+  readonly req: Request & ExotRequest;
 
   readonly requestId: string = randomUUID();
 
@@ -52,7 +52,7 @@ export class Context<
 
   #res = {
     body: void 0 as ResponseBody,
-    headers: RUNTIME === 'bun' ? new Headers() : new HttpHeaders(),
+    headers: RUNTIME === 'bun' ? new Headers() : new ExotHeaders(),
     status: 0,
   };
 

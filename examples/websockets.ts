@@ -1,4 +1,4 @@
-import { Exot } from '../lib.js';
+import { Exot } from '../lib/index.js';
 
 // Run this example in Bun (it has websockets built-in)
 

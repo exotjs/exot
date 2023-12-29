@@ -6,7 +6,7 @@ import type { Exot } from './exot.js';
 import type { ExotWebSocket } from './websocket.js';
 import type { Router } from './router.js';
 import type { Config, HTTPMethod, HTTPVersion } from 'find-my-way';
-import type { HttpRequest } from './request.js';
+import type { ExotRequest } from './request.js';
 import type { PubSub } from './pubsub.js';
 declare const EVENTS: readonly ["error", "publish", "request", "response", "route", "start"];
 export type { HTTPMethod } from 'find-my-way';
@@ -36,7 +36,7 @@ export type AnyRecord = Record<string, any>;
 export type AnyExot<T extends ContextInterface = ContextInterface> = Exot<any, any, any, T>;
 export type AnyStackHandlerOptions = StackHandlerOptions<any, any, any, any, any>;
 export interface ContextInit<Params = AnyRecord, Store = unknown> {
-    req: Request & HttpRequest;
+    req: Request & ExotRequest;
     params?: Params;
     pubsub?: PubSub;
     store?: Store;
@@ -71,13 +71,13 @@ export type WsHandler<WsSocket> = {
     open?: (ws: WsSocket) => Promise<void> | void;
     upgrade?: (req: Request, res: Response) => Promise<void> | void;
 };
-export interface WebSocketHandler<UserData> {
-    beforeUpgrade?: (req: Request, socket?: unknown, head?: unknown) => MaybePromise<UserData>;
-    close?: (ws: ExotWebSocket<any, UserData>, userData: UserData) => MaybePromise<void>;
-    drain?: (ws: ExotWebSocket<any, UserData>, userData: UserData) => MaybePromise<void>;
-    error?: (ws: ExotWebSocket<any, UserData>, err: any, userData: UserData) => MaybePromise<void>;
-    message?: (ws: ExotWebSocket<any, UserData>, message: ArrayBuffer | Uint8Array | string, userData: UserData) => MaybePromise<void>;
-    open?: (ws: ExotWebSocket<any, UserData>, userData: UserData) => MaybePromise<void>;
+export interface WebSocketHandler<Ctx extends ContextInterface = ContextInterface> {
+    beforeUpgrade?: (ctx: Ctx) => MaybePromise<void>;
+    close?: (ws: ExotWebSocket<any, any>, ctx: Ctx) => MaybePromise<void>;
+    drain?: (ws: ExotWebSocket<any, any>, ctx: Ctx) => MaybePromise<void>;
+    error?: (ws: ExotWebSocket<any, any>, err: any, ctx: Ctx) => MaybePromise<void>;
+    message?: (ws: ExotWebSocket<any, any>, message: ArrayBuffer | Uint8Array | string, ctx: Ctx) => MaybePromise<void>;
+    open?: (ws: ExotWebSocket<any, any>, ctx: Ctx) => MaybePromise<void>;
 }
 type IsOptionalParameter<Part> = Part extends `:${infer ParamName}?` ? ParamName : never;
 type IsParameter<Part> = Part extends `:${string}?` ? never : Part extends `:${infer ParamName}` ? ParamName : never;
@@ -111,13 +111,12 @@ export interface Trace {
     time: number;
     traces: Trace[];
 }
-export interface Adapter<WsHandler = any> {
-    websocket?: any;
+export interface Adapter {
     close(): Promise<void>;
     fetch(req: Request, ...args: unknown[]): MaybePromise<Response>;
     listen(port: number): Promise<number>;
     mount(exot: Exot<any, any, any>): void;
-    ws(path: string, handler: WsHandler): void;
+    upgradeRequest(ctx: ContextInterface, handler: WebSocketHandler): MaybePromise<any>;
 }
 export type PubSubHandler = (topic: string, data: ArrayBuffer | string | null) => void;
 export interface HandleOptions {

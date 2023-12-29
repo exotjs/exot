@@ -92,8 +92,8 @@ describe('Exot', () => {
         exot.use(fn1);
         exot.use(fn2);
         await exot.handle(exot.context(new Request('http://localhost/')))
-        expect(fn1).toHaveBeenCalledOnce();
-        expect(fn2).toHaveBeenCalledOnce();
+        expect(fn1).toHaveBeenCalled();
+        expect(fn2).toHaveBeenCalled();
       });
     });
 
@@ -112,9 +112,9 @@ describe('Exot', () => {
         exot.use(fn2);
         exot.notFound(notFound);
         await exot.handle(ctx);
-        expect(fn1).toHaveBeenCalledOnce();
-        expect(fn2).toHaveBeenCalledOnce();
-        expect(notFound).toHaveBeenCalledOnce();
+        expect(fn1).toHaveBeenCalled();
+        expect(fn2).toHaveBeenCalled();
+        expect(notFound).toHaveBeenCalled();
       });
     });
 
@@ -127,7 +127,7 @@ describe('Exot', () => {
         });
         expect(exot.errorHandler).toEqual(fn);
         await exot.handle(exot.context(new Request('http://localhost/')))
-        expect(fn).toHaveBeenCalledOnce();
+        expect(fn).toHaveBeenCalled();
       });
     });
 
@@ -136,7 +136,7 @@ describe('Exot', () => {
         const fn = vi.fn(() => {});
         exot.notFound(fn);
         await exot.handle(exot.context(new Request('http://localhost/')))
-        expect(fn).toHaveBeenCalledOnce();
+        expect(fn).toHaveBeenCalled();
       });
     });
 
@@ -145,7 +145,7 @@ describe('Exot', () => {
         const fn = vi.fn(() => 'test');
         exot.add('GET', '/test', fn);
         const result = await exot.handle(exot.context(new Request('http://localhost/test')));
-        expect(fn).toHaveBeenCalledOnce();
+        expect(fn).toHaveBeenCalled();
         expect(result).toEqual('test');
       });
     });

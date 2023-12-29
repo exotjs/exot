@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { HttpHeaders } from '../lib/headers.js';
+import { ExotHeaders } from '../lib/headers.js';
 
-describe('HttpHeaders', () => {
+describe('ExotHeaders', () => {
   describe('constructor', () => {
     it('should create a new instance with default headers', () => {
-      const headers = new HttpHeaders({
+      const headers = new ExotHeaders({
         'x-header-1': 'abc',
         'x-header-2': 'xyz',
       });
@@ -16,10 +16,10 @@ describe('HttpHeaders', () => {
   });
 
   describe('methods', () => {
-    let headers: HttpHeaders;
+    let headers: ExotHeaders;
 
     beforeEach(() => {
-      headers = new HttpHeaders();
+      headers = new ExotHeaders();
     });
 
     describe('.append()', () => {

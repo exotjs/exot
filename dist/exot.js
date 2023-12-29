@@ -1,15 +1,13 @@
 import { Readable } from 'node:stream';
-import { NodeAdapter } from './adapters/node.js';
 import { Context } from './context.js';
 import { compileSchema, validateSchema } from './validation.js';
 import { BaseError, NotFoundError } from './errors.js';
 import { Router, isStaticPath, joinPaths, normalizePath } from './router.js';
 import { Events } from './events.js';
 import { awaitMaybePromise, chain, printTraces } from './helpers.js';
-import { BunAdapter } from './adapters/bun.js';
+import { getAutoAdapter } from './adapters/auto.js';
 import { FetchAdapter } from './adapters/fetch.js';
 import { PubSub } from './pubsub.js';
-import { RUNTIME } from './env.js';
 export class Exot {
     init;
     static createRouter(init) {
@@ -49,7 +47,7 @@ export class Exot {
         }
     }
     get fetch() {
-        const adapter = this.#ensureAdapter(RUNTIME === 'bun' ? BunAdapter : FetchAdapter);
+        const adapter = this.#ensureAdapter(getAutoAdapter(FetchAdapter));
         if (!this.#composed) {
             this.compose();
         }
@@ -76,6 +74,7 @@ export class Exot {
         return routes;
     }
     get websocket() {
+        // @ts-expect-error
         return this.#adapter?.websocket;
     }
     adapter(adapter) {
@@ -183,7 +182,11 @@ export class Exot {
         return this.add('PUT', path, handler, options);
     }
     ws(path, handler) {
-        this.#ensureAdapter().ws(path, handler);
+        this.#handlers.push({
+            path,
+            handler,
+            websocket: true,
+        });
         return this;
     }
     handle(ctx, options = {}) {
@@ -268,11 +271,17 @@ export class Exot {
     }
     compose(parent) {
         if (!this.#composed) {
+            if (!parent) {
+                this.#ensureAdapter();
+            }
+            else {
+                this.#adapter = parent.#adapter;
+            }
             if (parent) {
                 // forward events from the parent
                 parent.events.forwardTo(this.events);
             }
-            for (let { method, path, handler, options } of this.#handlers) {
+            for (let { method, path, handler, options, websocket } of this.#handlers) {
                 if (path) {
                     path = joinPaths(parent?.init.prefix || '', this.init.prefix || '', path);
                     const stack = this.#composeHandler(handler, options, [
@@ -282,9 +291,12 @@ export class Exot {
                         (ctx) => {
                             ctx.end();
                         },
-                    ]);
+                    ], websocket);
                     let router = this.#ensureRouter();
                     if (router.has(method || 'GET', path)) {
+                        if (websocket) {
+                            throw new Error(`Route ${path} is already mounted and cannot be used for websockets.`);
+                        }
                         router = this.#ensureRouter(true);
                     }
                     if (method) {
@@ -296,7 +308,7 @@ export class Exot {
                 }
                 else {
                     // other handlers
-                    this.#stack.push(...this.#composeHandler(handler));
+                    this.#stack.push(...this.#composeHandler(handler, options, [], [], websocket));
                 }
                 if (handler instanceof Exot || this.#isExotCompatible(handler)) {
                     handler.compose(this);
@@ -308,7 +320,7 @@ export class Exot {
             }
         }
     }
-    #composeHandler(handler, options = {}, before = [], after = []) {
+    #composeHandler(handler, options = {}, before = [], after = [], websocket) {
         const stack = [
             (ctx) => ctx.terminated ? null : void 0,
             ...before,
@@ -336,7 +348,12 @@ export class Exot {
                 ctx.responseSchema = responseSchema;
             });
         }
-        stack.push(this.#createHandlerFn(handler), ...after);
+        if (websocket) {
+            stack.push((ctx) => this.#adapter?.upgradeRequest(ctx, handler), ...after);
+        }
+        else {
+            stack.push(this.#createHandlerFn(handler), ...after);
+        }
         return stack;
     }
     #createHandlerFn(handler) {
@@ -360,7 +377,7 @@ export class Exot {
         }
         return handler;
     }
-    #ensureAdapter(defaultAdapter = RUNTIME === 'bun' ? BunAdapter : NodeAdapter) {
+    #ensureAdapter(defaultAdapter = getAutoAdapter()) {
         if (!this.#adapter) {
             this.adapter(new defaultAdapter());
         }
@@ -386,7 +403,7 @@ export class Exot {
         const type = typeof body;
         if (body &&
             type === 'object' &&
-            !(body instanceof ReadableStream || body instanceof Readable)) {
+            !(body instanceof Response || body instanceof ReadableStream || body instanceof Readable)) {
             ctx.json(body);
         }
         else if (type === 'string') {

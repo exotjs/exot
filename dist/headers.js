@@ -14,9 +14,9 @@ export function lazyLowerCase(str) {
     }
     return str.toLowerCase();
 }
-export class HttpHeaders {
+export class ExotHeaders {
     static proxy() {
-        return new Proxy(new HttpHeaders(), {
+        return new Proxy(new ExotHeaders(), {
             get(target, prop) {
                 if (typeof target[prop] === 'function') {
                     return target[prop];

@@ -36,7 +36,7 @@ export class FetchAdapter {
         this.exot = exot;
         return exot;
     }
-    ws(path, handler) {
+    upgradeRequest(ctx, handler) {
         throw new Error('Not implemented.');
     }
 }

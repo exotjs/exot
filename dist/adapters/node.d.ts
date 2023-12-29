@@ -4,19 +4,13 @@
 import { type Duplex } from 'node:stream';
 import { IncomingMessage, ServerResponse } from 'node:http';
 import { Exot } from '../exot.js';
-import { Adapter, WebSocketHandler } from '../types.js';
-import { HttpHeaders } from '../headers.js';
-import { HttpRequest } from '../request.js';
-import { ExotWebSocket } from '../websocket.js';
+import { Adapter, ContextInterface, WebSocketHandler } from '../types.js';
+import { ExotHeaders } from '../headers.js';
+import { ExotRequest } from '../request.js';
 interface WSServer {
     emit: (event: string, ws: any, req: IncomingMessage) => void;
     handleUpgrade: (req: IncomingMessage, socket: Duplex, head: Buffer, cb: (ws: any) => void) => void;
     on: (event: string, cb: (ws: any, req: IncomingMessage) => void) => void;
-}
-interface WSSocket {
-    close: () => void;
-    on: (event: string, fn: () => void) => void;
-    send: (data: any) => void;
 }
 export interface NodeAdapterInit {
     wss?: WSServer;
@@ -30,18 +24,19 @@ export declare class NodeAdapter implements Adapter {
     constructor(init?: NodeAdapterInit);
     close(): Promise<void>;
     listen(port: number): Promise<number>;
-    mount(exot: Exot): Exot<{}, {}, {}, {}, import("../types.js").ContextInterface<{}, any, any, any, {}>>;
+    mount(exot: Exot): Exot<{}, {}, {}, {}, ContextInterface<{}, any, any, any, {}>>;
     fetch(req: Request): Promise<Response>;
-    ws(path: string, handler: WebSocketHandler<any>): void;
+    upgradeRequest(ctx: ContextInterface, handler: WebSocketHandler): import("../types.js").MaybePromise<void>;
 }
-export declare class NodeRequest extends HttpRequest {
+export declare class NodeRequest extends ExotRequest {
     #private;
     readonly raw: IncomingMessage;
+    readonly head?: Buffer | undefined;
     readonly method: string;
     readonly url: string;
-    constructor(raw: IncomingMessage);
+    constructor(raw: IncomingMessage, head?: Buffer | undefined);
     get body(): ReadableStream<Uint8Array>;
-    get headers(): HttpHeaders;
+    get headers(): ExotHeaders;
     arrayBuffer(): Promise<ArrayBuffer>;
     blob(): Promise<Blob>;
     clone(): NodeRequest;
@@ -49,7 +44,4 @@ export declare class NodeRequest extends HttpRequest {
     json(): Promise<any>;
     text(): Promise<string>;
     remoteAddress(): string;
-}
-export declare class NodeWebSocket<UserData> extends ExotWebSocket<WSSocket, UserData> {
-    constructor(exot: Exot, raw: WSSocket, userData: UserData);
 }

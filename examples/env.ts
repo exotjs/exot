@@ -1,4 +1,4 @@
-import { Static, t } from '../lib.js';
+import { Static, t } from '../lib/index.js';
 import { env, assertEnv } from '../lib/env.js';
 
 const envSchema = t.Object({

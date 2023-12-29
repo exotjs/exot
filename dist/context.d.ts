@@ -2,17 +2,17 @@
 import { Readable } from 'node:stream';
 import { TSchema } from '@sinclair/typebox';
 import { Cookies } from './cookies.js';
-import { HttpHeaders } from './headers.js';
+import { ExotHeaders } from './headers.js';
 import type { ValidateFunction } from 'ajv';
 import type { AnyRecord, ContextInit, HTTPMethod, MaybePromise, Trace } from './types.js';
-import { HttpRequest } from './request.js';
+import { ExotRequest } from './request.js';
 import { PubSub } from './pubsub.js';
 export declare class Context<Params = AnyRecord, Body = unknown, Query = AnyRecord, ResponseBody = unknown, Store = unknown> {
     #private;
     bodySchema?: ValidateFunction<TSchema>;
     readonly params: Params;
     pubsub: PubSub;
-    readonly req: Request & HttpRequest;
+    readonly req: Request & ExotRequest;
     readonly requestId: string;
     responseSchema?: ValidateFunction<TSchema>;
     route?: string;
@@ -32,7 +32,7 @@ export declare class Context<Params = AnyRecord, Body = unknown, Query = AnyReco
     get remoteAddress(): string | null;
     get res(): {
         body: ResponseBody;
-        headers: Headers | HttpHeaders;
+        headers: Headers | ExotHeaders;
         status: number;
     };
     get arrayBuffer(): (value?: ArrayBuffer) => Promise<ArrayBuffer> | undefined;

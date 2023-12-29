@@ -1,15 +1,16 @@
 import { Exot } from './exot.js';
 import { PubSubSubscriber } from './pubsub.js';
-export interface WebSocketInterface {
+interface WebSocketInterface {
+    addEventListener?: (event: string, handler: () => void) => void;
     close: () => void;
     send: (data: ArrayBuffer | Uint8Array | string) => void;
 }
-export declare class ExotWebSocket<RawWebSocket extends WebSocketInterface, UserData> {
+export declare class ExotWebSocket<RawWebSocket extends WebSocketInterface, UserData = any> {
     readonly exot: Exot;
     readonly raw: RawWebSocket;
     readonly userData: UserData;
     readonly subscriber: PubSubSubscriber;
-    constructor(exot: Exot, raw: RawWebSocket, userData: UserData);
+    constructor(exot: Exot, raw: RawWebSocket, userData?: UserData);
     close(): void;
     send(data: ArrayBuffer | Uint8Array | string | null): void;
     publish(topic: string, data: ArrayBuffer | Uint8Array | string): number;
@@ -17,3 +18,4 @@ export declare class ExotWebSocket<RawWebSocket extends WebSocketInterface, User
     unsubscribe(topic: string): void;
     unsubscribeAll(): void;
 }
+export {};

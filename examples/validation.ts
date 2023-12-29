@@ -1,4 +1,4 @@
-import { Exot, t } from '../lib.js';
+import { Exot, t } from '../lib/index.js';
 
 const ex = new Exot({
   tracing: true,

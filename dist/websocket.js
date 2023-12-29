@@ -6,10 +6,13 @@ export class ExotWebSocket {
     subscriber = new PubSubSubscriber((_topic, data) => {
         this.send(data);
     });
-    constructor(exot, raw, userData) {
+    constructor(exot, raw, userData = {}) {
         this.exot = exot;
         this.raw = raw;
         this.userData = userData;
+        this.raw.addEventListener?.('close', () => {
+            this.unsubscribeAll();
+        });
     }
     close() {
         this.raw.close();

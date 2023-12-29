@@ -31,6 +31,18 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./adapters/bun": {
+      "types": "./dist/adapters/bun.d.ts",
+      "import": "./dist/adapters/bun.js"
+    },
+    "./adapters/fetch": {
+      "types": "./dist/adapters/fetch.d.ts",
+      "import": "./dist/adapters/fetch.js"
+    },
+    "./adapters/node": {
+      "types": "./dist/adapters/node.d.ts",
+      "import": "./dist/adapters/node.js"
+    },
     "./env": {
       "types": "./dist/env.d.ts",
       "import": "./dist/env.js"
@@ -58,12 +70,22 @@
     "./validation": {
       "types": "./dist/validation.d.ts",
       "import": "./dist/validation.js"
+    },
+    "./websocket": {
+      "types": "./dist/websocket.d.ts",
+      "import": "./dist/websocket.js"
     }
   },
   "typesVersions": {
     "*": {
-      "types": [
-        "./dist/types"
+      "adapters/bun": [
+        "./dist/adapters/bun"
+      ],
+      "adapters/fetch": [
+        "./dist/adapters/fetch"
+      ],
+      "adapters/node": [
+        "./dist/adapters/node"
       ],
       "env": [
         "./dist/env"
@@ -83,8 +105,14 @@
       "request": [
         "./dist/request"
       ],
+      "types": [
+        "./dist/types"
+      ],
       "validation": [
         "./dist/validation"
+      ],
+      "websocket": [
+        "./dist/websocket"
       ]
     }
   },
@@ -99,6 +127,7 @@
   "devDependencies": {
     "@types/cookie": "^0.5.4",
     "@types/node": "^20.9.0",
+    "@types/ws": "^8.5.10",
     "denoify": "^1.6.6",
     "rimraf": "^5.0.5",
     "tinybench": "^2.5.1",
@@ -106,7 +135,7 @@
     "tsx": "^4.0.0",
     "typescript": "^5.2.2",
     "vitest": "^1.0.1",
-    "ws": "^8.15.1"
+    "ws": "^8.16.0"
   },
   "engines": {
     "node": ">=20.0.0"

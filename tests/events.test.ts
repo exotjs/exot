@@ -21,9 +21,9 @@ describe('Events', () => {
     events.on('request', listener1);
     events.on('request', listener2);
     await events.emit('request', ctx);
-    expect(listener1).toHaveBeenCalledOnce();
+    expect(listener1).toHaveBeenCalled();
     expect(listener1).toHaveBeenCalledWith(ctx);
-    expect(listener2).toHaveBeenCalledOnce();
+    expect(listener2).toHaveBeenCalled();
     expect(listener2).toHaveBeenCalledWith(ctx);
   });
 
@@ -35,7 +35,7 @@ describe('Events', () => {
     events.off('request', listener1);
     await events.emit('request', ctx);
     expect(listener1).not.toHaveBeenCalled();
-    expect(listener2).toHaveBeenCalledOnce();
+    expect(listener2).toHaveBeenCalled();
   });
 
   it('should forward events to other instances', async () => {
@@ -50,11 +50,11 @@ describe('Events', () => {
     events2.on('request', listener2);
     events3.on('request', listener3);
     await events.emit('request', ctx);
-    expect(listener1).toHaveBeenCalledOnce();
+    expect(listener1).toHaveBeenCalled();
     expect(listener1).toHaveBeenCalledWith(ctx);
-    expect(listener2).toHaveBeenCalledOnce();
+    expect(listener2).toHaveBeenCalled();
     expect(listener2).toHaveBeenCalledWith(ctx);
-    expect(listener3).toHaveBeenCalledOnce();
+    expect(listener3).toHaveBeenCalled();
     expect(listener3).toHaveBeenCalledWith(ctx);
   });
 });

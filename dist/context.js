@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { validateSchema } from './validation.js';
 import { Cookies } from './cookies.js';
 import { RUNTIME } from './env.js';
-import { HttpHeaders } from './headers.js';
+import { ExotHeaders } from './headers.js';
 import { parseUrl, parseQueryString, awaitMaybePromise } from './helpers.js';
 export class Context {
     bodySchema;
@@ -23,7 +23,7 @@ export class Context {
     #currentTrace;
     #res = {
         body: void 0,
-        headers: RUNTIME === 'bun' ? new Headers() : new HttpHeaders(),
+        headers: RUNTIME === 'bun' ? new Headers() : new ExotHeaders(),
         status: 0,
     };
     constructor(init) {

@@ -1,4 +1,4 @@
-import { Exot } from '../lib.js';
+import { Exot } from '../lib/index.js';
 
 const adminRouter = new Exot({
   name: 'router/admin',

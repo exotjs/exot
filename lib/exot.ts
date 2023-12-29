@@ -20,17 +20,15 @@ import {
   EventHandler,
   HandleOptions,
 } from './types.js';
-import { NodeAdapter } from './adapters/node.js';
 import { Context } from './context.js';
 import { compileSchema, validateSchema } from './validation.js';
 import { BaseError, NotFoundError } from './errors.js';
 import { Router, isStaticPath, joinPaths, normalizePath } from './router.js';
 import { Events } from './events.js';
 import { awaitMaybePromise, chain, printTraces } from './helpers.js';
-import { BunAdapter } from './adapters/bun.js';
+import { getAutoAdapter } from './adapters/auto.js';
 import { FetchAdapter } from './adapters/fetch.js';
 import { PubSub } from './pubsub.js';
-import { RUNTIME } from './env.js';
 import type { HTTPMethod } from 'find-my-way';
 
 export class Exot<
@@ -76,8 +74,9 @@ export class Exot<
   #handlers: {
     method?: HTTPMethod;
     path?: string;
-    handler: StackHandler<LocalContext>;
+    handler: StackHandler<LocalContext> | WebSocketHandler<any>;
     options?: AnyStackHandlerOptions;
+    websocket?: boolean;
   }[] = [];
 
   #notFoundHandler?: ChainFn<LocalContext>;
@@ -105,7 +104,7 @@ export class Exot<
   }
 
   get fetch() {
-    const adapter = this.#ensureAdapter(RUNTIME === 'bun' ? BunAdapter : FetchAdapter);
+    const adapter = this.#ensureAdapter(getAutoAdapter(FetchAdapter));
     if (!this.#composed) {
       this.compose();
     }
@@ -133,6 +132,7 @@ export class Exot<
   }
 
   get websocket() {
+    // @ts-expect-error
     return this.#adapter?.websocket;
   }
 
@@ -494,8 +494,12 @@ export class Exot<
     return this.add('PUT', path, handler, options);
   }
 
-  ws<UserData = any>(path: string, handler: WebSocketHandler<UserData>) {
-    this.#ensureAdapter().ws(path, handler);
+  ws(path: string, handler: WebSocketHandler<LocalContext>) {
+    this.#handlers.push({
+      path,
+      handler,
+      websocket: true,
+    });
     return this;
   }
 
@@ -613,11 +617,16 @@ export class Exot<
 
   compose(parent?: Exot<any, any, any, any>) {
     if (!this.#composed) {
+      if (!parent) {
+        this.#ensureAdapter();
+      } else {
+        this.#adapter = parent.#adapter;
+      }
       if (parent) {
         // forward events from the parent
         parent.events.forwardTo(this.events);
       }
-      for (let { method, path, handler, options } of this.#handlers) {
+      for (let { method, path, handler, options, websocket } of this.#handlers) {
         if (path) {
           path = joinPaths(
             parent?.init.prefix || '',
@@ -636,10 +645,14 @@ export class Exot<
                 ctx.end();
 
               },
-            ]
+            ],
+            websocket
           );
           let router = this.#ensureRouter();
           if (router.has(method || 'GET', path)) {
+            if (websocket) {
+              throw new Error(`Route ${path} is already mounted and cannot be used for websockets.`);
+            }
             router = this.#ensureRouter(true);
           }
           if (method) {
@@ -649,7 +662,7 @@ export class Exot<
           }
         } else {
           // other handlers
-          this.#stack.push(...this.#composeHandler(handler));
+          this.#stack.push(...this.#composeHandler(handler, options, [], [], websocket));
         }
         if (handler instanceof Exot || this.#isExotCompatible(handler)) {
           (handler as Exot<any, any, any, LocalContext>).compose(this);
@@ -663,10 +676,11 @@ export class Exot<
   }
 
   #composeHandler(
-    handler: StackHandler<LocalContext>,
+    handler: StackHandler<LocalContext> | WebSocketHandler<any>,
     options: AnyStackHandlerOptions = {},
     before: ChainFn<LocalContext>[] = [],
-    after: ChainFn<LocalContext>[] = []
+    after: ChainFn<LocalContext>[] = [],
+    websocket?: boolean,
   ) {
     const stack: ChainFn<LocalContext>[] = [
       (ctx) => ctx.terminated ? null : void 0,
@@ -699,10 +713,17 @@ export class Exot<
         ctx.responseSchema = responseSchema;
       });
     }
-    stack.push(
-      this.#createHandlerFn(handler),
-      ...after
-    );
+    if (websocket) {
+      stack.push(
+        (ctx: LocalContext) => this.#adapter?.upgradeRequest(ctx, handler as WebSocketHandler<any>),
+        ...after
+      );
+    } else {
+      stack.push(
+        this.#createHandlerFn(handler as StackHandler<LocalContext>),
+        ...after
+      );
+    }
     return stack;
   }
 
@@ -731,7 +752,7 @@ export class Exot<
     return handler;
   }
 
-  #ensureAdapter(defaultAdapter: new () => Adapter = RUNTIME === 'bun' ? BunAdapter : NodeAdapter) {
+  #ensureAdapter(defaultAdapter: new () => Adapter = getAutoAdapter()) {
     if (!this.#adapter) {
       this.adapter(new defaultAdapter());
     }
@@ -763,7 +784,7 @@ export class Exot<
     if (
       body &&
       type === 'object' &&
-      !(body instanceof ReadableStream || body instanceof Readable)
+      !(body instanceof Response || body instanceof ReadableStream || body instanceof Readable)
     ) {
       ctx.json(body);
     } else if (type === 'string') {

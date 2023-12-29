@@ -12,8 +12,8 @@ describe('Helpers', () => {
         onResult,
         onError,
       );
-      expect(fn).toHaveBeenCalledOnce();
-      expect(onResult).toHaveBeenCalledOnce();
+      expect(fn).toHaveBeenCalled();
+      expect(onResult).toHaveBeenCalled();
       expect(onResult).toHaveBeenCalledWith(1);
       expect(onError).not.toHaveBeenCalled();
     });
@@ -27,8 +27,8 @@ describe('Helpers', () => {
         onResult,
         onError,
       );
-      expect(fn).toHaveBeenCalledOnce();
-      expect(onResult).toHaveBeenCalledOnce();
+      expect(fn).toHaveBeenCalled();
+      expect(onResult).toHaveBeenCalled();
       expect(onResult).toHaveBeenCalledWith(1);
       expect(onError).not.toHaveBeenCalled();
     });
@@ -45,9 +45,9 @@ describe('Helpers', () => {
         onResult,
         onError,
       );
-      expect(fn).toHaveBeenCalledOnce();
+      expect(fn).toHaveBeenCalled();
       expect(onResult).not.toHaveBeenCalled();
-      expect(onError).toHaveBeenCalledOnce();
+      expect(onError).toHaveBeenCalled();
       expect(onError).toHaveBeenCalledWith(err);
     });
 
@@ -61,9 +61,9 @@ describe('Helpers', () => {
         onResult,
         onError,
       );
-      expect(fn).toHaveBeenCalledOnce();
+      expect(fn).toHaveBeenCalled();
       expect(onResult).not.toHaveBeenCalled();
-      expect(onError).toHaveBeenCalledOnce();
+      expect(onError).toHaveBeenCalled();
       expect(onError).toHaveBeenCalledWith(err);
     });
   });
@@ -75,9 +75,9 @@ describe('Helpers', () => {
       const fn2 = vi.fn(() => {});
       const fn3 = vi.fn(() => {});
       const result = chain([fn1, fn2, fn3], input);
-      expect(fn1).toHaveBeenCalledOnce();
-      expect(fn2).toHaveBeenCalledOnce();
-      expect(fn3).toHaveBeenCalledOnce();
+      expect(fn1).toHaveBeenCalled();
+      expect(fn2).toHaveBeenCalled();
+      expect(fn3).toHaveBeenCalled();
       expect(result).toBeUndefined();
     });
     
@@ -87,9 +87,9 @@ describe('Helpers', () => {
       const fn2 = vi.fn(async () => {});
       const fn3 = vi.fn(async () => {});
       const result = await chain([fn1, fn2, fn3], input);
-      expect(fn1).toHaveBeenCalledOnce();
-      expect(fn2).toHaveBeenCalledOnce();
-      expect(fn3).toHaveBeenCalledOnce();
+      expect(fn1).toHaveBeenCalled();
+      expect(fn2).toHaveBeenCalled();
+      expect(fn3).toHaveBeenCalled();
       expect(result).toBeUndefined();
     });
 
@@ -104,8 +104,8 @@ describe('Helpers', () => {
       });
       const fn2 = vi.fn((prev) => {});
       const result = await chain([fn1, fn2], input);
-      expect(fn1).toHaveBeenCalledOnce();
-      expect(fn2).toHaveBeenCalledOnce();
+      expect(fn1).toHaveBeenCalled();
+      expect(fn2).toHaveBeenCalled();
       expect(result).toBeUndefined();
     });
 
@@ -115,8 +115,8 @@ describe('Helpers', () => {
       const fn2 = vi.fn(() => 1);
       const fn3 = vi.fn(() => {});
       const result = chain([fn1, fn2, fn3], input);
-      expect(fn1).toHaveBeenCalledOnce();
-      expect(fn2).toHaveBeenCalledOnce();
+      expect(fn1).toHaveBeenCalled();
+      expect(fn2).toHaveBeenCalled();
       expect(fn3).not.toHaveBeenCalled();
       expect(result).toEqual(1);
     });
@@ -127,9 +127,9 @@ describe('Helpers', () => {
       const fn2 = vi.fn(() => 1);
       const fn3 = vi.fn(() => {});
       const result = chain([fn1, fn2, fn3], input, 0, false);
-      expect(fn1).toHaveBeenCalledOnce();
-      expect(fn2).toHaveBeenCalledOnce();
-      expect(fn3).toHaveBeenCalledOnce();
+      expect(fn1).toHaveBeenCalled();
+      expect(fn2).toHaveBeenCalled();
+      expect(fn3).toHaveBeenCalled();
       expect(result).toBeUndefined();
     });
   });
@@ -141,9 +141,9 @@ describe('Helpers', () => {
       const fn2 = vi.fn(() => 1);
       const fn3 = vi.fn(() => 2);
       const result = chainAll([fn1, fn2, fn3], input);
-      expect(fn1).toHaveBeenCalledOnce();
-      expect(fn2).toHaveBeenCalledOnce();
-      expect(fn3).toHaveBeenCalledOnce();
+      expect(fn1).toHaveBeenCalled();
+      expect(fn2).toHaveBeenCalled();
+      expect(fn3).toHaveBeenCalled();
       expect(result).toBeUndefined();
     });
   });

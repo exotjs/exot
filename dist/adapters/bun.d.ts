@@ -1,9 +1,9 @@
 import { FetchAdapter } from './fetch.js';
 import { ExotWebSocket } from '../websocket.js';
-import type { MaybePromise, WebSocketHandler } from '../types.js';
+import type { ContextInterface, MaybePromise, WebSocketHandler } from '../types.js';
 interface BunWebsocketData<UserData> {
-    handler: WebSocketHandler<UserData>;
-    userData: UserData;
+    ctx: ContextInterface;
+    handler: WebSocketHandler;
     ws: ExotWebSocket<BunServerWebSocket, UserData>;
 }
 interface BunServerWebSocket<UserData = any> {
@@ -36,5 +36,5 @@ export declare class BunAdapter extends FetchAdapter {
     get websocket(): BunWebsockets;
     fetch(req: Request): MaybePromise<Response>;
     listen(port: number): Promise<number>;
-    ws(path: string, handler: WebSocketHandler<any>): void;
+    upgradeRequest(ctx: ContextInterface, handler: WebSocketHandler): MaybePromise<Response | undefined>;
 }

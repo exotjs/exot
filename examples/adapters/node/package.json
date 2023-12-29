@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "devDependencies": {
+    "@types/ws": "^8.5.10",
+    "ws": "8.16.0"
+  }
+}

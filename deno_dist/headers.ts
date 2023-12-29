@@ -16,9 +16,9 @@ export function lazyLowerCase(str: string) {
   return str.toLowerCase();
 }
 
-export class HttpHeaders implements Headers { 
+export class ExotHeaders implements Headers { 
   static proxy() {
-    return new Proxy(new HttpHeaders() as HttpHeaders & Record<string, string | string[]>, {
+    return new Proxy(new ExotHeaders() as ExotHeaders & Record<string, string | string[]>, {
       get(target, prop: string) {
         if (typeof target[prop] === 'function') {
           return target[prop];
@@ -120,7 +120,7 @@ export class HttpHeaders implements Headers {
     delete this.#map[lazyLowerCase(name)];
   }
 
-  forEach = (fn: (value: string, key: string, parent: HttpHeaders) => void) => {
+  forEach = (fn: (value: string, key: string, parent: ExotHeaders) => void) => {
     for (let k in this.#map) {
       const value = this.#map[k];
       if (Array.isArray(value)) {

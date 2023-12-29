@@ -1,11 +1,11 @@
 import { FetchAdapter } from './fetch.ts';
 import { awaitMaybePromise, parseUrl } from '../helpers.ts';
 import { ExotWebSocket } from '../websocket.ts';
-import type { MaybePromise, WebSocketHandler } from '../types.ts';
+import type { ContextInterface, MaybePromise, WebSocketHandler } from '../types.ts';
 
 interface BunWebsocketData<UserData> {
-  handler: WebSocketHandler<UserData>;
-  userData: UserData;
+  ctx: ContextInterface,
+  handler: WebSocketHandler;
   ws: ExotWebSocket<BunServerWebSocket, UserData>;
 }
 
@@ -51,36 +51,36 @@ export const adapter = () => new BunAdapter();
 export default adapter;
 
 export class BunAdapter extends FetchAdapter {
-  #wsHandlers: Record<string, WebSocketHandler<any>> = {};
+  #server?: BunServer;
 
   get websocket(): BunWebsockets {
     const exot = this.exot;
     return {
       close(ws) {
         if (ws.data.handler && ws.data.ws) {
-          ws.data.handler.close?.(ws.data.ws, ws.data.userData);
+          ws.data.handler.close?.(ws.data.ws, ws.data.ctx);
           ws.data.ws.unsubscribeAll();
         }
       },
       drain(ws) {
         if (ws.data.handler && ws.data.ws) {
-          ws.data.handler.drain?.(ws.data.ws, ws.data.userData);
+          ws.data.handler.drain?.(ws.data.ws, ws.data.ctx);
         }
       },
       error(ws, err) {
         if (ws.data.handler && ws.data.ws) {
-          ws.data.handler.error?.(ws.data.ws, err, ws.data.userData);
+          ws.data.handler.error?.(ws.data.ws, err, ws.data.ctx);
         }
       },
       message(ws, data) {
         if (ws.data.handler && ws.data.ws) {
-          ws.data.handler.message?.(ws.data.ws, data, ws.data.userData);
+          ws.data.handler.message?.(ws.data.ws, data, ws.data.ctx);
         }
       },
       open(ws) {
         if (ws.data.handler) {
-          ws.data.ws = new ExotWebSocket(exot, ws, ws.data.userData)
-          ws.data.handler.open?.(ws.data.ws, ws.data.userData);
+          ws.data.ws = new ExotWebSocket(exot, ws, ws.data.ctx)
+          ws.data.handler.open?.(ws.data.ws, ws.data.ctx);
         }
       },
     };
@@ -88,42 +88,15 @@ export class BunAdapter extends FetchAdapter {
 
   fetch(req: Request): MaybePromise<Response>;
   fetch(req: Request, server?: BunServer): MaybePromise<Response | undefined> {
-    const { path } = parseUrl(req.url);
-    const handler = this.#wsHandlers[path];
-    if (server && handler) {
-      return awaitMaybePromise(
-        () => {
-          if (handler.beforeUpgrade) {
-            return handler.beforeUpgrade(req);
-          }
-        },
-        (userData) => {
-          const ok = server.upgrade(req, {
-            data: {
-              handler,
-              userData,
-              ws: null as any,
-            },
-          });
-          return ok
-            ? undefined
-            : new Response('Request upgrade failed', {
-                status: 400,
-              });
-        },
-        (_err) => {
-          return new Response('Request upgrade failed', {
-            status: 500,
-          });
-        }
-      );
+    if (!this.#server && server) {
+      this.#server = server;
     }
     return super.fetch(req);
   }
 
   async listen(port: number): Promise<number> {
     // @ts-expect-error
-    Bun.serve({
+    this.#server = Bun.serve({
       fetch: this.exot.fetch,
       port,
       websocket: this.websocket,
@@ -131,7 +104,36 @@ export class BunAdapter extends FetchAdapter {
     return port;
   }
 
-  ws(path: string, handler: WebSocketHandler<any>): void {
-    this.#wsHandlers[path] = handler;
+  upgradeRequest(ctx: ContextInterface, handler: WebSocketHandler) {
+    const server = this.#server;
+    if (!server) {
+      throw new Error('Unable to upgrade.');
+    }
+    return awaitMaybePromise(
+      () => {
+        if (handler.beforeUpgrade) {
+          return handler.beforeUpgrade(ctx);
+        }
+      },
+      () => {
+        const ok = server.upgrade(ctx.req, {
+          data: {
+            ctx,
+            handler,
+            ws: null as any,
+          },
+        });
+        return ok
+          ? undefined
+          : new Response('Request upgrade failed', {
+              status: 400,
+            });
+      },
+      (_err) => {
+        return new Response('Request upgrade failed', {
+          status: 500,
+        });
+      }
+    );
   }
 }

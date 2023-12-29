@@ -1,4 +1,4 @@
-export class HttpRequest {
+export class ExotRequest {
     get bodyUsed() {
         return false;
     }

@@ -1,4 +1,4 @@
-import { Exot, t } from '../lib.js';
+import { Exot, t } from '../lib/index.js';
 import { printTraces } from '../lib/helpers.js';
 
 async function slowFunc(name: string) {

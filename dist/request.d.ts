@@ -1,11 +1,11 @@
-export interface HttpRequest {
+export interface ExotRequest {
     parsedUrl?(): {
         path: string;
         querystring: string;
     };
     remoteAddress?(): string;
 }
-export declare abstract class HttpRequest implements Request {
+export declare abstract class ExotRequest implements Request {
     abstract method: string;
     abstract arrayBuffer(): Promise<ArrayBuffer>;
     abstract blob(): Promise<Blob>;

@@ -1,4 +1,4 @@
-import { Exot } from '../lib.js';
+import { Exot } from '../lib/index.js';
 import { ForbiddenError } from '../lib/errors.js';
 
 enum Role {

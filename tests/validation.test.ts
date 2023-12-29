@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { TSchema, t } from '../lib.js';
+import { TSchema, t } from '../lib/index.js';
 import {
   ValidateFunction,
   compileSchema,

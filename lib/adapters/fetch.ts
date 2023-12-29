@@ -1,5 +1,5 @@
 import { Exot } from '../exot.js';
-import { Adapter, MaybePromise } from '../types.js';
+import { Adapter, ContextInterface, MaybePromise, WebSocketHandler } from '../types.js';
 import { awaitMaybePromise } from '../helpers.js';
 
 export const adapter = () => new FetchAdapter();
@@ -49,7 +49,7 @@ export class FetchAdapter implements Adapter {
     return exot;
   }
 
-  ws(path: string, handler: any): void {
+  upgradeRequest(ctx: ContextInterface, handler: WebSocketHandler) {
     throw new Error('Not implemented.');
   }
 }

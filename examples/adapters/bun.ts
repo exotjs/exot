@@ -29,10 +29,8 @@ const exot = new Exot()
   })
   
   .ws('/ws', {
-    beforeUpgrade(req: Request) {
-      return {
-        auth: req.headers.get('authentication'),
-      };
+    beforeUpgrade(ctx) {
+      // noop
     },
     open(ws) {
       ws.subscribe('test_topic');
