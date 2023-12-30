@@ -79,7 +79,7 @@ export class BunAdapter extends FetchAdapter {
       },
       open(ws) {
         if (ws.data.handler) {
-          ws.data.ws = new ExotWebSocket(exot, ws, ws.data.ctx)
+          ws.data.ws = new ExotWebSocket(exot, ws, ws.data.ctx);
           ws.data.handler.open?.(ws.data.ws, ws.data.ctx);
         }
       },

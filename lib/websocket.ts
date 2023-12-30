@@ -2,7 +2,7 @@ import { Exot } from './exot.js';
 import { PubSubSubscriber } from './pubsub.js';
 
 interface WebSocketInterface {
-  addEventListener?: (event: string, handler: () => void) => void;
+  addEventListener?: (event: any, handler: () => void, options?: any) => void;
   close: () => void;
   send: (data: ArrayBuffer | Uint8Array | string) => void; 
 }

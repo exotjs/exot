@@ -9,13 +9,15 @@ export const adapter = (init = {}) => new NodeAdapter(init);
 export default adapter;
 export class NodeAdapter {
     init;
-    #exot;
+    exot;
+    heartbeatInterval = setInterval(this.#onHeartbeat, 30000);
     server = createServer();
     constructor(init = {}) {
         this.init = init;
     }
     async close() {
         return new Promise((resolve) => {
+            this.server.closeAllConnections();
             this.server.close(() => {
                 resolve(void 0);
             });
@@ -33,7 +35,7 @@ export class NodeAdapter {
         });
     }
     mount(exot) {
-        this.#exot = exot;
+        this.exot = exot;
         this.#mountRequestHandler(exot);
         this.#mountUpgradeHandler(exot);
         return exot;
@@ -51,7 +53,7 @@ export class NodeAdapter {
                 }
             }, () => {
                 wss.handleUpgrade(req.raw, req.raw.socket, req.head || Buffer.from(''), (ws) => {
-                    const ews = new ExotWebSocket(this.#exot, ws, {});
+                    const ews = new ExotWebSocket(this.exot, ws, {});
                     wss.emit('connection', ws, req.raw);
                     ws.on('close', () => {
                         handler.close?.(ews, ctx);
@@ -64,6 +66,10 @@ export class NodeAdapter {
                     });
                     ws.on('message', (data) => {
                         handler.message?.(ews, data, ctx);
+                    });
+                    ws.on('pong', () => {
+                        // @ts-expect-error
+                        ws.isAlive = true;
                     });
                     awaitMaybePromise(() => handler.open?.(ews, ctx), () => { }, (_err) => {
                         req.raw.socket.destroy();
@@ -104,6 +110,21 @@ export class NodeAdapter {
                 socket.destroy();
             });
         });
+    }
+    #onHeartbeat() {
+        if (this.init.wss) {
+            for (let ws of this.init.wss.clients) {
+                // @ts-expect-error
+                if (ws.isAlive === false) {
+                    ws.terminate();
+                }
+                else {
+                    // @ts-expect-error
+                    ws.isAlive = false;
+                    ws.ping();
+                }
+            }
+        }
     }
     #sendResponse(ctx, res) {
         res.statusCode = ctx.res.status || 200;

@@ -135,9 +135,7 @@ export class Context<
   get arrayBuffer() {
     return (value?: ArrayBuffer) => {
       if (value !== void 0) {
-        if (!this.res.headers.has('content-type')) {
-          this.res.headers.set('content-type', 'application/octet-stream');
-        }
+        this.res.headers.set('Content-Type', 'application/octet-stream');
         this.res.body = value as ResponseBody;
       } else {
         return this.req.arrayBuffer();
@@ -154,9 +152,7 @@ export class Context<
   get json() {
     return (value?: any, validate?: boolean) => {
       if (value !== void 0) {
-        if (!this.res.headers.has('content-type')) {
-          this.res.headers.set('content-type', 'application/json');
-        }
+        this.res.headers.set('Content-Type', 'application/json');
         this.res.body = JSON.stringify(validate === false ? value : this.#validateResponse(value)) as ResponseBody;
       } else {
         return this.req.json().then((body: Body) => this.#validateBody(body));
@@ -182,9 +178,7 @@ export class Context<
   get text() {
     return (value?: string, validate?: boolean) => {
       if (value !== void 0) {
-        if (!this.res.headers.has('content-type')) {
-          this.res.headers.set('content-type', 'text/plain');
-        }
+        this.res.headers.set('Content-Type', 'text/plain');
         this.res.body = (validate === false ? value : this.#validateResponse(value)) as ResponseBody;
       } else {
         return this.req.text().then((body: string) => this.#validateBody(body));

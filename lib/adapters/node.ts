@@ -1,4 +1,4 @@
-import { Readable, type Duplex } from 'node:stream';
+import { Readable } from 'node:stream';
 import { IncomingMessage, ServerResponse, createServer } from 'node:http';
 import { Exot } from '../exot.js';
 import {
@@ -7,21 +7,16 @@ import {
   WebSocketHandler,
 } from '../types.js';
 import { Context } from '../context.js';
-import { awaitMaybePromise, parseFormData, parseUrl } from '../helpers.js';
+import { awaitMaybePromise, parseFormData } from '../helpers.js';
 import { ExotHeaders } from '../headers.js';
 import { ExotRequest } from '../request.js';
 import { ExotWebSocket } from '../websocket.js';
+import type { WebSocketServer, WebSocket } from 'ws';
 
 const textDecoder = new TextDecoder();
 
-interface WSServer {
-  emit: (event: string, ws: any, req: IncomingMessage) => void;
-  handleUpgrade: (req: IncomingMessage, socket: Duplex, head: Buffer, cb: (ws: any) => void) => void;
-  on: (event: string, cb: (ws: any, req: IncomingMessage) => void) => void;
-}
-
 export interface NodeAdapterInit {
-  wss?: WSServer;
+  wss?: WebSocketServer;
 }
 
 export const adapter = (init: NodeAdapterInit = {}) => new NodeAdapter(init);
@@ -31,7 +26,9 @@ export default adapter;
 export class NodeAdapter
   implements Adapter
 {
-  #exot?: Exot;
+  exot?: Exot;
+
+  readonly heartbeatInterval = setInterval(this.#onHeartbeat, 30000);
 
   readonly server = createServer();
 
@@ -40,6 +37,7 @@ export class NodeAdapter
 
   async close(): Promise<void> {
     return new Promise((resolve) => {
+      this.server.closeAllConnections();
       this.server.close(() => {
         resolve(void 0);
       });
@@ -59,7 +57,7 @@ export class NodeAdapter
   }
 
   mount(exot: Exot) {
-    this.#exot = exot;
+    this.exot = exot;
     this.#mountRequestHandler(exot);
     this.#mountUpgradeHandler(exot);
     return exot;
@@ -81,7 +79,7 @@ export class NodeAdapter
         },
         () => {
           wss.handleUpgrade(req.raw, req.raw.socket, req.head || Buffer.from(''), (ws) => {
-            const ews = new ExotWebSocket(this.#exot!, ws, {});
+            const ews = new ExotWebSocket(this.exot!, ws, {});
             wss.emit('connection', ws, req.raw);
             ws.on('close', () => {
               handler.close?.(ews, ctx);
@@ -94,6 +92,10 @@ export class NodeAdapter
             });
             ws.on('message', (data: Buffer) => {
               handler.message?.(ews, data, ctx);
+            });
+            ws.on('pong', () => {
+              // @ts-expect-error
+              ws.isAlive = true;
             });
             awaitMaybePromise(
               () => handler.open?.(ews, ctx),
@@ -149,6 +151,21 @@ export class NodeAdapter
         },
       );
     });
+  }
+  
+  #onHeartbeat() {
+    if (this.init.wss) {
+      for (let ws of this.init.wss.clients) {
+        // @ts-expect-error
+        if (ws.isAlive === false) {
+          ws.terminate();
+        } else {
+          // @ts-expect-error
+          ws.isAlive = false;
+          ws.ping();
+        }
+      }
+    }
   }
 
   #sendResponse(ctx: Context, res: ServerResponse) {

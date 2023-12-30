@@ -1,5 +1,5 @@
 import { FetchAdapter } from './fetch.ts';
-import { awaitMaybePromise, parseUrl } from '../helpers.ts';
+import { awaitMaybePromise } from '../helpers.ts';
 import { ExotWebSocket } from '../websocket.ts';
 import type { ContextInterface, MaybePromise, WebSocketHandler } from '../types.ts';
 
@@ -79,7 +79,7 @@ export class BunAdapter extends FetchAdapter {
       },
       open(ws) {
         if (ws.data.handler) {
-          ws.data.ws = new ExotWebSocket(exot, ws, ws.data.ctx)
+          ws.data.ws = new ExotWebSocket(exot, ws, ws.data.ctx);
           ws.data.handler.open?.(ws.data.ws, ws.data.ctx);
         }
       },
